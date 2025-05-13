@@ -12,6 +12,9 @@ def serializuj_slovnik_do_jsonld(slovnikData):
     Returns:
         str: The serialized JSON-LD string.
     """
+    
+    print(slovnikData)
+    
     json_ld_data = {
         "@context": JSONLD_CONTEXT,
         "iri": slovnikData["graf"],

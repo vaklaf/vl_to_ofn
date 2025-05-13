@@ -14,7 +14,7 @@ import pandas as pd
 
 from dotenv import load_dotenv
 
-from queries import query_all_grahps
+from queries import query_all_grahps, all_glossaries
 from serializers import serializuj_slovnik_do_jsonld;
 
 
@@ -33,56 +33,35 @@ sparql.setReturnFormat(JSON)
 
 try:
     # Set the SPARQL query
-    sparql.setQuery(query_all_grahps)
+    sparql.setQuery(all_glossaries)
     results = sparql.queryAndConvert()
     
-    # Categorize grpaphs by their path, excluding the last part of the URI
-    categorized_graphs = {}
+    
+    grafy = {}
     paths:list = []
+
     for result in results["results"]["bindings"]:
-        graph = result["graf"]["value"]
-        path = graph.split("/")[3]  # Extract the path from the graph URI
-        
-        if path not in paths:
-            paths.append(path)
     
-    
-        if path not in categorized_graphs:
-            categorized_graphs[path] = []
-        categorized_graphs[path].append({
-            "graf": graph,
-            "created": result["created"]["value"],
-            "titleCs": result["titleCs"]["value"],
-            "descriptionCs": result.get("descriptionCs", {}).get("value", ""),
-            "titleEn": result.get("titleEn", {}).get("value", ""),
-            "descriptionEn": result.get("descriptionEn", {}).get("value", "")
-        })
+        graf = result["graf"]["value"]
+ 
+        if graf not in grafy:
+            grafy[graf] = {
+                "created": result["grafCreated"]["value"],
+                "titleCs": result["grafLabelCs"]["value"],
+                "descriptionCs": result["grafDefinitionCs"]["value"],
+                "titleEn": result["grafLabelEn"]["value"],
+                "descriptionEn": result["grafDefinitionEn"]["value"],
+                "typ": result["grafTypStrPole"]["value"]
+            }
         
-    # Print the paths
-    # print("Paths:")
-    # print(paths)
-    # # # Print the categorized graphs
-    # for path, graphs in categorized_graphs.items():
-    #     print(f"Path: {path}")
-    #     for graph in graphs:
-    #         print(f"  Graph: {graph['graf']}")
-    #         print(f"  Created: {graph['created']}")
-    #         print(f"  Title (CS): {graph['titleCs']}")
-    #         print(f"  Description (CS): {graph['descriptionCs']}")
-    #         print(f"  Title (EN): {graph['titleEn']}")
-    #         print(f"  Description (EN): {graph['descriptionEn']}")
+    for graf in grafy.keys():
     
-    for path in paths:
-        # Get the graphs for the current path
-        graphs = categorized_graphs[path]
-        
-        for graph in graphs:
-            
+
             try:
-                name = f'{path}_{graph["graf"].split("/")[4]}'
+                name = graph["graf"].split("/")[4]
             except IndexError:
                 print(f"Graf URI nemá dostatek segmentů: {graph['graf']}")
-                name = f'{path}_{graph["graf"].split("/")[-1] }' 
+                name = graph["graf"].split("/")[-1]
                 print(f"Using name: {name}")
             
             output = Path.cwd() / "outputs" /   f"{name}.jsonld"
