@@ -12,10 +12,13 @@ def serializuj_slovnik_do_jsonld(slovnikData):
     Returns:
         str: The serialized JSON-LD string.
     """
+    
+    
+    
     json_ld_data = {
         "@context": JSONLD_CONTEXT,
         "iri": slovnikData["graf"],
-        "typ": ["Slovník","Tezaurus","Konceptuální model"],
+        "typ": [typ for typ in slovnikData['typ'].split(",")],
         "název": {
             "cs": slovnikData["titleCs"],
             "en": slovnikData["titleEn"],
