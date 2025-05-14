@@ -1,17 +1,16 @@
 # This script queries a SPARQL endpoint and saves the results to JSON-LD file.
 
 import os
+import json
 
 from pathlib import Path
 import sys
 # Add the parent directory to the system path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from SPARQLWrapper import SPARQLWrapper, JSON
-import json
 import requests
-import pandas as pd
 
+from SPARQLWrapper import SPARQLWrapper, JSON
 from dotenv import load_dotenv
 
 from queries import query_all_grahps, all_glossaries
@@ -46,6 +45,7 @@ try:
  
         if graf not in grafy:
             grafy[graf] = {
+                "graf": graf,
                 "created": result["grafCreated"]["value"],
                 "titleCs": result["grafLabelCs"]["value"],
                 "descriptionCs": result["grafDefinitionCs"]["value"],
@@ -54,25 +54,30 @@ try:
                 "typ": result["grafTypStrPole"]["value"]
             }
         
-    for graf in grafy.keys():
-    
+    for key,graf in grafy.items():
+        
 
-            try:
-                name = graph["graf"].split("/")[4]
-            except IndexError:
-                print(f"Graf URI nemá dostatek segmentů: {graph['graf']}")
-                name = graph["graf"].split("/")[-1]
-                print(f"Using name: {name}")
+        try:
+            name = key.split("/")[4]
+        except IndexError:
+            print(f"Graf URI nemá dostatek segmentů: {graf['graf']}")
+            name = key.split("/")[-1]
+            print(f"Using name: {name}")
+        
+        # Create the output directory if it doesn't exist
+        output_dir = Path.cwd() / "outputs"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        output = output_dir /  f"{name}.jsonld"
+        
+        
+        with open(output, "w", encoding="utf-8") as f:
             
-            output = Path.cwd() / "outputs" /   f"{name}.jsonld"
-            print(f"Output file: {output}")
-       
-            with open(output, "w", encoding="utf-8") as f:
-                
-                # Serialize the graph data to JSON-LD format
-                json_ld = serializuj_slovnik_do_jsonld(graph)
-                f.write(json_ld)
-                f.write("\n")
+                        
+            # Serialize the graph data to JSON-LD format
+            json_ld = serializuj_slovnik_do_jsonld(graf)
+            f.write(json_ld)
+            f.write("\n")
                
     print(f"JSON-LD files have been saved to the outputs directory.");
     

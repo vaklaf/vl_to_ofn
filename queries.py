@@ -22,8 +22,7 @@ PREFIX owl: <http://www.w3.org/2002/07/owl#>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 PREFIX z-sgov: <http://onto.fel.cvut.cz/ontologies/slovník/agendový/popis-dat/pojem/>
 
-SELECT DISTINCT (?g as ?graf) 
-(GROUP_CONCAT(DISTINCT ?gTyp; SEPARATOR=", ") as ?grafTypPole)
+SELECT DISTINCT (?g as ?graf) (GROUP_CONCAT(DISTINCT ?gTyp; SEPARATOR=", ") as ?grafTypPole)
 (GROUP_CONCAT(DISTINCT ?gTypStr; SEPARATOR=", ") as ?grafTypStrPole)
 (COALESCE(STR(?gLabelCs),"") as ?grafLabelCs) 
 (COALESCE(STR(?gLabelEn),"") as ?grafLabelEn)
@@ -44,7 +43,6 @@ WHERE {
        OPTIONAL{?g skos:definition ?gDefinitionEn FILTER(LANG(?gDefinitionEn) = "en")}.
     
     BIND(IF(?gTyp = owl:Ontology, "Slovník", IF(?gTyp = z-sgov:glosář, "Tezaurus", IF(?gTyp = owl:NamedIndividual, "NamedIndividual", "Konceptuální model"))) AS ?gTypStr)
-
 }
 GROUP BY ?g ?gLabelCs ?gLabelEn ?gdefinitionCs ?gDefinitionEn ?gCreated
 
