@@ -40,22 +40,90 @@ try:
     paths:list = []
 
     for result in results["results"]["bindings"]:
-    
+        
+        
         graf = result["graf"]["value"]
  
+        
+        
+        
         if graf not in grafy:
-            grafy[graf] = {
+            
+            # Pokud je v result klíč "gLabel" a má jazyk "cs", vytvoř název češtině.
+            if "gLabel" in result \
+                and "xml:lang" in result["gLabel"] \
+                and result["gLabel"]["xml:lang"] == "cs":
+                title_cs = result["gLabel"]["value"]
+            else:
+                title_cs = ""
+                
+            # Pokud je v reslut klíč "gLabel" a má jazyk "en", vytvoř název v angličtině.    
+            if "gLabel" in result \
+                and "xml:lang" in result["gLabel"] \
+                and result["gLabel"]["xml:lang"] == "en":
+                title_en = result["gLabel"]["value"]
+            else:
+                title_en = ""   
+                
+            # Pokud je v reslut klíč "gDefinition" a má jazyk "cs", vytvoř popis v češtině.    
+            if "gDefinition" in result and "xml:lang" in result["gDefinition"] and result["gDefinition"]["xml:lang"] == "cs":
+                description_cs = result["gDefinition"]["value"]
+            else:
+                description_cs = ""
+                
+            # Pokud je v reslut klíč "gDefinition" a má jazyk "en", vytovř popis v angličtině.    
+            if "gDefiniton" in result and "xml:lang" in result["gDefinition"] and result["gDefinition"]["xml:lang"] == "en":
+                description_en = result["gDefinition"]["value"]
+            else:
+                description_en = ""
+                
+            graf_dict = {
                 "graf": graf,
-                "created": result["grafCreated"]["value"],
-                "titleCs": result["grafLabelCs"]["value"],
-                "descriptionCs": result["grafDefinitionCs"]["value"],
-                "titleEn": result["grafLabelEn"]["value"],
-                "descriptionEn": result["grafDefinitionEn"]["value"],
                 "typ": result["grafTypStrPole"]["value"]
             }
+            
+            # Pokud je v reslut klíč "grafCreated", přidej hodnotu do slovníku.
+            if "grafCreated" in result and "value" in result["grafCreated"]:
+                if "created" not in graf_dict:
+                    graf_dict["created"] = result["grafCreated"]["value"]
+        
+            # Pokud není v graf_dict klíč "title", přidej prázdný slovník.
+            if "title" not in graf_dict:
+                graf_dict["title"] = {}
+
+            # Přidej český a anglický název do slovníku, pokud jsou k dispozici.
+            if title_cs:
+                graf_dict["title"]["cs"] = title_cs
+                
+            if title_en:
+                graf_dict["title"]["en"] = title_en
+            
+            # Pokud není v graf_dict klíč "description", přidej prázdný slovník.
+            if "description" not in graf_dict:
+                graf_dict["description"] = {}
+            
+            # Přidej český a anglický popis do slovníku, pokud jsou k dispozici.
+            if description_cs:
+                graf_dict["description"]["cs"] = description_cs
+            
+            if description_en:
+                graf_dict["description"]["en"] = description_en
+                
+            # Přidej graf_dict do slovníku grafy pod klíčem graf.
+            grafy[graf] = graf_dict
         
     for key,graf in grafy.items():
         
+        # Print the graph information
+        print(f"Graph URI: {graf['graf']}")
+        if graf.get("created"):
+            print(f"Created: {graf['created']}")
+        if "title" in graf:
+            print(f"Title: {graf['title']}")
+        if graf.get("description"):
+            print(f"Description: {graf['description']}")
+        print(f"Type: {graf['typ']}")
+        print("-" * 40)
 
         try:
             name = key.split("/")[4]
@@ -84,13 +152,13 @@ try:
         print(results)
         
         
-        with open(output, "w", encoding="utf-8") as f:
+        # with open(output, "w", encoding="utf-8") as f:
             
                         
-            # Serialize the graph data to JSON-LD format
-            json_ld = serializuj_slovnik_do_jsonld(graf)
-            f.write(json_ld)
-            f.write("\n")
+        #     # Serialize the graph data to JSON-LD format
+        #     json_ld = serializuj_slovnik_do_jsonld(graf)
+        #     f.write(json_ld)
+        #     f.write("\n")
                
     print(f"JSON-LD files have been saved to the outputs directory.");
     
