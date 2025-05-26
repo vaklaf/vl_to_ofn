@@ -48,5 +48,3 @@ WHERE {
     
     BIND(IF(?gTyp = owl:Ontology, "Slovník", IF(?gTyp = z-sgov:glosář, "Tezaurus", IF(?gTyp = owl:NamedIndividual, "NamedIndividual", "Konceptuální model"))) AS ?gTypStr)
 }
-GROUP BY ?g ?gLabel ?gDefinition ?gCreated
-"""

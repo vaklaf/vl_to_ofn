@@ -13,7 +13,7 @@ import requests
 from SPARQLWrapper import SPARQLWrapper, JSON
 from dotenv import load_dotenv
 
-from queries import query_all_grahps, all_glossaries
+from queries import all_glossaries,qurey_items_template
 from serializers import serializuj_slovnik_do_jsonld;
 
 
@@ -137,6 +137,19 @@ try:
         output_dir.mkdir(parents=True, exist_ok=True)
         
         output = output_dir /  f"{name}.jsonld"
+        
+        # Get dictionary items
+        basic_graf = graf['graf'].rsplit("/", 1)[0] + "/" 
+        glosar_graph = f"{basic_graf}glosář"
+        model_graph = f"{basic_graf}model"
+        qurey_items = qurey_items_template.format(glosar_graph=glosar_graph, model_graph=model_graph)
+    #    
+        #print(qurey_items)
+                 
+        sparql.setQuery(qurey_items)
+        results = sparql.queryAndConvert()
+        print(f"Processing graph: {graf['graf']}")
+        print(results)
         
         
         # with open(output, "w", encoding="utf-8") as f:
