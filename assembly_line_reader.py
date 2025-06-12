@@ -83,34 +83,43 @@ def read_data_from_assembly_line():
             items_results = sparql.queryAndConvert()
 
             for result in items_results["results"]["bindings"]:
-                concept = {
-                    "iri": result["pojem"]["value"],
-                    "typObjektu": [to.strip() for to in result.get("typObjektuPole", {}).get("value", "").split(',') if len(to.strip()) > 1],
-                }
-                # Název
-                nazev = {}
-                if result.get("labelCsStr", {}).get("value"):
-                    nazev["cs"] = result["labelCsStr"]["value"]
-                if result.get("labelEnStr", {}).get("value"):
-                    nazev["en"] = result["labelEnStr"]["value"]
-                if nazev:
-                    concept["nazev"] = nazev
-                # Definice
-                definice = {}
-                if result.get("definitionCsStr", {}).get("value"):
-                    definice["cs"] = result["definitionCsStr"]["value"]
-                if result.get("definitionEnStr", {}).get("value"):
-                    definice["en"] = result["definitionEnStr"]["value"]
-                if definice:
-                    concept["definice"] = definice
-                # Nadřazený pojem
-                if result.get("nadrazenyPojemPole", {}).get("value"):
-                    concept["nadrazenyPojem"] = [x.strip() for x in result["nadrazenyPojemPole"]["value"].split(',') if x.strip()]
-                # Zdroj
-                if result.get("pojemZdroj", {}).get("value"):
-                    concept["zdroj"] = result["pojemZdroj"]["value"]
+                pojem_iri = result["pojem"]["value"]
 
-                glossary["pojmy"].append(concept)
+                # Najdi nebo vytvoř pojem podle IRI
+                concept = next((p for p in glossary["pojmy"] if p["iri"] == pojem_iri), None)
+                if not concept:
+                    concept = {
+                        "iri": pojem_iri,
+                        "label": {},
+                        "altLabel": {},
+                        "definition": {},
+                        "poznamka": {},
+                        "typObjektu": [to.strip() for to in result.get("typObjektuPole", {}).get("value", "").split(',') if len(to.strip()) > 1],
+                    }
+                    # Nadřazený pojem
+                    if result.get("nadrazenyPojemPole", {}).get("value"):
+                        concept["nadrazenyPojem"] = [x.strip() for x in result["nadrazenyPojemPole"]["value"].split(',') if x.strip()]
+                    # Zdroj
+                    if result.get("pojemZdroj", {}).get("value"):
+                        concept["zdroj"] = result["pojemZdroj"]["value"]
+                    glossary["pojmy"].append(concept)
+
+                # label
+                if "label" in result and "xml:lang" in result["label"]:
+                    lang = result["label"]["xml:lang"]
+                    concept["label"][lang] = result["label"]["value"]
+                # altLabel
+                if "altLabel" in result and "xml:lang" in result["altLabel"]:
+                    lang = result["altLabel"]["xml:lang"]
+                    concept["altLabel"][lang] = result["altLabel"]["value"]
+                # definition
+                if "definition" in result and "xml:lang" in result["definition"]:
+                    lang = result["definition"]["xml:lang"]
+                    concept["definition"][lang] = result["definition"]["value"]
+                # poznámka
+                if "poznamka" in result and "xml:lang" in result["poznamka"]:
+                    lang = result["poznamka"]["xml:lang"]
+                    concept["poznamka"][lang] = result["poznamka"]["value"]
 
         return glossaries
 

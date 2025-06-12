@@ -31,14 +31,10 @@ PREFIX z-sgov-pojem: <https://slovník.gov.cz/základní/pojem/>
 
 SELECT DISTINCT  
 ?pojem
-(COALESCE(STR(?labelCs), "") AS ?labelCsStr)
-(COALESCE(STR(?labelEn), "") AS ?labelEnStr)
-(COALESCE(STR(?altLabelCs), "") AS ?altLabelCsStr)
-(COALESCE(STR(?altLabelEn), "") AS ?altLabelEnStr)
-(COALESCE(STR(?definitionCs), "") AS ?definitionCsStr)
-(COALESCE(STR(?definitionEn), "") AS ?definitionEnStr)
-(COALESCE(STR(?poznamkaCs), "") AS ?poznamkaCsStr)
-(COALESCE(STR(?poznamkaEn), "") AS ?poznamkaEnStr)
+?label
+?altLabel
+?definition
+?poznamka
 ?pojemZdroj
 (GROUP_CONCAT(DISTINCT ?typObjektuStr ; SEPARATOR=", ") AS ?typObjektuPole) 
 (GROUP_CONCAT(DISTINCT ?pojemJePodtridou ; SEPARATOR=", ") AS ?pojemJePodtridouPole)
@@ -47,14 +43,10 @@ WHERE {{
   GRAPH <{glosar_graph}> {{
     ?g skos:hasTopConcept ?pojem .
     ?pojem a ?rdfType .
-    OPTIONAL {{ ?pojem skos:prefLabel ?labelCs FILTER(LANG(?labelCs) = "cs") }}
-    OPTIONAL {{ ?pojem skos:prefLabel ?labelEn FILTER(LANG(?labelEn) = "en") }}
-    OPTIONAL {{ ?pojem skos:altLabel ?altLabelCs FILTER(LANG(?altLabelCs) = "cs") }}
-    OPTIONAL {{ ?pojem skos:altLabel ?altLabelEn FILTER(LANG(?altLabelEn) = "en") }}
-    OPTIONAL {{ ?pojem skos:definition ?definitionCs FILTER(LANG(?definitionCs) = "cs") }}
-    OPTIONAL {{ ?pojem skos:definition ?definitionEn FILTER(LANG(?definitionEn) = "en") }}
-    OPTIONAL {{ ?pojem skos:scopeNote ?poznamkaCs FILTER(LANG(?poznamkaCs) = "cs") }}
-    OPTIONAL {{ ?pojem skos:scopeNote ?poznamkaEn FILTER(LANG(?poznamkaEn) = "en") }}
+    OPTIONAL {{ ?pojem skos:prefLabel ?label }}
+    OPTIONAL {{ ?pojem skos:altLabel ?altLabel }}
+    OPTIONAL {{ ?pojem skos:definition ?definition }}
+    OPTIONAL {{ ?pojem skos:scopeNote ?poznamka }}
     OPTIONAL {{ ?pojem skos:broader ?nadrazenyPojem }}.
     OPTIONAL {{ ?pojem dc:source ?pojemZdroj }}
   }}
@@ -69,6 +61,6 @@ WHERE {{
     FILTER(!STRSTARTS(LCASE(STR(?pojemJePodtridou)), "_:"))
   }}
 }}
-GROUP BY ?pojem ?labelCs ?labelEn ?altLabelCs ?altLabelEn ?definitionCs ?definitionEn ?poznamkaCs ?poznamkaEn ?pojemZdroj
+GROUP BY ?pojem ?label ?altLabel ?definition ?poznamka ?pojemZdroj
 ORDER BY ?pojem
 """
