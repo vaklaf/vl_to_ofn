@@ -1,33 +1,23 @@
 import json
 
-JSONLD_CONTEXT = "https://ofn.gov.cz/slovníky/draft/kontexty/slovníky.jsonld"
-
-def serializuj_slovnik_do_jsonld(slovnikData):
-    """
-    Serializes the given dictionary into JSON-LD format.
-    
-    Args:
-        slovnikData (dict): The dictionary to serialize.
-        
-    Returns:
-        str: The serialized JSON-LD string.
-    """
-    
-    
-    
+def serializuj_slovnik_do_jsonld(graf, data):
     json_ld_data = {
-        "@context": JSONLD_CONTEXT,
-        "iri": slovnikData["graf"],
-        "typ": [typ for typ in slovnikData['typ'].split(",")],
-        "název": {
-            "cs": slovnikData["titleCs"],
-            "en": slovnikData["titleEn"],
+        "@context": "https://ofn.gov.cz/slovníky/draft/kontexty/slovníky.jsonld",
+        "iri": graf,
+        "typ": data["typ"],
+        "název": {"cs": data["title"]["cs"]} if data["title"].get("cs") else {},
+        "popis": {"cs": data["descriptionCs"]} if data.get("descriptionCs") else {},
+        "vytvořeno": {
+            "typ": "Časový okamžik",
+            "datum": data["created"]
         },
-        "popis": {
-            "cs": slovnikData["descriptionCs"],
-            "en": slovnikData["descriptionEn"],
-        },
-        "pojmy": []
+        "pojmy": [pojem for pojem in data["pojmy"]]
     }
-    
+    # Podmíněně přidej "en" do názvu
+    if data["title"].get("en"):
+        json_ld_data["název"]["en"] = data["title"]["en"]
+    # Podmíněně přidej "en" do popisu
+    if data.get("descriptionEn"):
+        json_ld_data["popis"]["en"] = data["descriptionEn"]
+
     return json.dumps(json_ld_data, ensure_ascii=False, indent=4)
