@@ -51,82 +51,69 @@ def register_glossary_file(glosar_graph, file_name):
 
 def read_data_from_assembly_line():
     """ Reads data from the assembly line and returns it."""
-    
-    
     try:
-        # Set the SPARQL query
         sparql.setQuery(all_glossaries)
         results = sparql.queryAndConvert()
-        
-        grafy = {}
-       
+        glossaries = {}
+
         for result in results["results"]["bindings"]:
             graf = result["graf"]["value"]
-
-            # Inicializace slovníku pro graf, pokud ještě neexistuje
-            if graf not in grafy:
-                grafy[graf] = {
-                    "typ": [result["grafTypStrPole"]["value"]],
-                    "title": {}
-                }
-                if "grafCreated" in result and "value" in result["grafCreated"]:
-                    grafy[graf]["created"] = result["grafCreated"]["value"]
-
-            # Uložení názvu podle jazyka
+            glossary = glossaries.setdefault(graf, {
+                "typ": [result["grafTypStrPole"]["value"]],
+                "title": {},
+                "pojmy": []
+            })
+            # Název podle jazyka
             if "gLabel" in result and "xml:lang" in result["gLabel"]:
-                lang = result["gLabel"]["xml:lang"]
-                value = result["gLabel"]["value"]
-                grafy[graf]["title"][lang] = value
-                
-            # Uložení popisu podle jazyka
+                glossary["title"][result["gLabel"]["xml:lang"]] = result["gLabel"]["value"]
+            # Popis podle jazyka
             if "gDescription" in result and "xml:lang" in result["gDescription"]:
-                if "description" not in grafy[graf]:
-                    grafy[graf]["description"] = {}
-                lang = result["gDescription"]["xml:lang"]
-                value = result["gDescription"]["value"]
-                grafy[graf]["description"][lang] = value
-                                
-            grafy[graf]["pojmy"] = []
-            
-            # Get dictionary items
-            basic_graf = graf.rsplit("/", 1)[0] + "/" 
+                glossary.setdefault("description", {})[result["gDescription"]["xml:lang"]] = result["gDescription"]["value"]
+            # Datum vytvoření
+            if "grafCreated" in result and "value" in result["grafCreated"]:
+                glossary["created"] = result["grafCreated"]["value"]
+
+        for graf, glossary in glossaries.items():
+            # Sestavení názvů grafů
+            basic_graf = graf.rsplit("/", 1)[0] + "/"
             glosar_graph = f"{basic_graf}glosář"
             model_graph = f"{basic_graf}model"
-            
             query_items = query_items_template.format(glosar_graph=glosar_graph, model_graph=model_graph)
-            
             sparql.setQuery(query_items)
             items_results = sparql.queryAndConvert()
-            
+
             for result in items_results["results"]["bindings"]:
-                pojem = {}
-                pojem["iri"] = result["pojem"]["value"]
-                pojem["typObjektu"] = [to.strip() for to in  result["typObjektuPole"]["value"].split(',') if len(to)>=2];
-                pojem["nazev"] = {}
-                if "labelCsStr" in result:
-                    pojem["nazev"]["cs"] = result["labelCsStr"]["value"]
-                if "labelEnStr" in result and result["labelEnStr"]["value"]:
-                    pojem["nazev"]["en"] = result["labelEnStr"]["value"]
-                    
-                # Definice – vytvoř pouze pokud existuje alespoň jedna hodnota
+                concept = {
+                    "iri": result["pojem"]["value"],
+                    "typObjektu": [to.strip() for to in result.get("typObjektuPole", {}).get("value", "").split(',') if len(to.strip()) > 1],
+                }
+                # Název
+                nazev = {}
+                if result.get("labelCsStr", {}).get("value"):
+                    nazev["cs"] = result["labelCsStr"]["value"]
+                if result.get("labelEnStr", {}).get("value"):
+                    nazev["en"] = result["labelEnStr"]["value"]
+                if nazev:
+                    concept["nazev"] = nazev
+                # Definice
                 definice = {}
-                if "definitionCsStr" in result and result["definitionCsStr"]["value"]:
+                if result.get("definitionCsStr", {}).get("value"):
                     definice["cs"] = result["definitionCsStr"]["value"]
-                if "definitionEnStr" in result and result["definitionEnStr"]["value"]:
+                if result.get("definitionEnStr", {}).get("value"):
                     definice["en"] = result["definitionEnStr"]["value"]
                 if definice:
-                    pojem["definice"] = definice
+                    concept["definice"] = definice
+                # Nadřazený pojem
                 if result.get("nadrazenyPojemPole", {}).get("value"):
-                    pojem["nadrazenyPojem"] = list(map(lambda x:x.strip(),result["nadrazenyPojemPole"]["value"].split(',')))
+                    concept["nadrazenyPojem"] = [x.strip() for x in result["nadrazenyPojemPole"]["value"].split(',') if x.strip()]
+                # Zdroj
                 if result.get("pojemZdroj", {}).get("value"):
-                    pojem["zdroj"] = result.get("pojemZdroj",{}).get("value")
-                
-                
-                grafy[graf]["pojmy"].append(pojem)
-                        
-        return grafy
-        
-                
+                    concept["zdroj"] = result["pojemZdroj"]["value"]
+
+                glossary["pojmy"].append(concept)
+
+        return glossaries
+
     except requests.exceptions.RequestException as e:
         print(f"Error connecting to SPARQL endpoint: {e}")
         exit(1)
@@ -158,7 +145,7 @@ def write_glossaries_and_files_to_json():
         
     print(f"Glossary files saved to {output_file}")
         
-def main(
+def run_assemly_line_reader(
     output_dir=OUTPUT_DIR,
     sparql_endpoint=SPARQL_ENDPOINT
 ):
@@ -171,7 +158,5 @@ def main(
         write_data_to_jsonl(graf, json_ld_data)
     write_glossaries_and_files_to_json()
 
-if __name__ == "__main__":
-    main()
-    
-    
+
+
