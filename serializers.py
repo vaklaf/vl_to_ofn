@@ -6,7 +6,6 @@ def serializuj_slovnik_do_jsonld(graf, data):
         "iri": graf,
         "typ": data["typ"],
         "název": data.get("title", {}),
-        "popis": data.get("description", {}),
         "vytvořeno": {
             "typ": "Časový okamžik",
             "datum": data.get("created")
@@ -14,24 +13,28 @@ def serializuj_slovnik_do_jsonld(graf, data):
         "pojmy": []
     }
 
+    # Přidej popis jen pokud existuje a není prázdný
+    if data.get("description") and data["description"]:
+        json_ld_data["popis"] = data["description"]
+
     for pojem in data["pojmy"]:
         pojem_json = {
             "iri": pojem["iri"],
-            "typObjektu": pojem.get("typObjektu", [])
+            "typ": pojem.get("typObjektu", [])
         }
         # Přidej jazykové varianty, pokud existují
         if pojem.get("label"):
-            pojem_json["nazev"] = pojem["label"]
+            pojem_json["název"] = pojem["label"]
         if pojem.get("altLabel"):
-            pojem_json["alternativniNazev"] = pojem["altLabel"]
+            pojem_json["alternativní-název"] = pojem["altLabel"]
         if pojem.get("definition"):
             pojem_json["definice"] = pojem["definition"]
         if pojem.get("poznamka"):
-            pojem_json["poznamka"] = pojem["poznamka"]
+            pojem_json["poznámka"] = pojem["poznamka"]
         if pojem.get("nadrazenyPojem"):
-            pojem_json["nadrazenyPojem"] = pojem["nadrazenyPojem"]
+            pojem_json["nadřazený-pojem"] = pojem["nadrazenyPojem"]
         if pojem.get("zdroj"):
-            pojem_json["zdroj"] = pojem["zdroj"]
+            pojem_json["související-ustanovení-právního-předpisu"] = pojem["zdroj"]
 
         json_ld_data["pojmy"].append(pojem_json)
 

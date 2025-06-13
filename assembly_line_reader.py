@@ -59,7 +59,7 @@ def read_data_from_assembly_line():
         for result in results["results"]["bindings"]:
             graf = result["graf"]["value"]
             glossary = glossaries.setdefault(graf, {
-                "typ": [result["grafTypStrPole"]["value"]],
+                "typ": [t.strip() for t in result["grafTypStrPole"]["value"].split(",")],
                 "title": {},
                 "pojmy": []
             })
@@ -154,7 +154,7 @@ def write_glossaries_and_files_to_json():
         
     print(f"Glossary files saved to {output_file}")
         
-def run_assemly_line_reader(
+def run_assebmly_line_reader(
     output_dir=OUTPUT_DIR,
     sparql_endpoint=SPARQL_ENDPOINT
 ):
