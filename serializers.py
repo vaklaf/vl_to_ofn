@@ -6,12 +6,22 @@ def serializuj_slovnik_do_jsonld(graf, data):
         "iri": graf,
         "typ": data["typ"],
         "název": data.get("title", {}),
-        "vytvořeno": {
-            "typ": "Časový okamžik",
-            "datum": data.get("created")
-        },
-        "pojmy": []
+        # "vytvořeno": {
+        #     "typ": "Časový okamžik",
+        #     "datum": data.get("created")
+        #},
+        # Přidej časový okamžik vytvoření, pokud existuje
+        
     }
+    
+    # Přidej časový okamžik vytvoření, pokud existuje
+    if "created" in data:
+        json_ld_data["vytvořeno"] = {
+            "typ": "Časový okamžik",
+            "datum": data["created"]
+        }
+    
+    json_ld_data["pojmy"] = []
 
     # Přidej popis jen pokud existuje a není prázdný
     if data.get("description") and data["description"]:
@@ -20,7 +30,8 @@ def serializuj_slovnik_do_jsonld(graf, data):
     for pojem in data["pojmy"]:
         pojem_json = {
             "iri": pojem["iri"],
-            "typ": pojem.get("typObjektu", [])
+            #"typ": pojem.get("typObjektu", [])
+            "typ":["Koncept", "Pojem"],
         }
         # Přidej jazykové varianty, pokud existují
         if pojem.get("label"):

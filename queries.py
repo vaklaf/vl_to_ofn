@@ -11,7 +11,9 @@ SELECT DISTINCT (?g as ?graf)
 ?gDefinition
 (STR(?gCreated) as ?grafCreated)
 WHERE {
-  GRAPH <https://slovník.gov.cz/datový/turistické-cíle/glosář> {
+#  GRAPH <https://slovník.gov.cz/legislativní/sbírka/183/2006/glosář> {
+#   GRAPH <https://slovník.gov.cz/veřejný-sektor/glosář> {
+  GRAPH ?g {
     ?g a owl:Ontology, z-sgov:glosář, skos:ConceptScheme;
        a ?gTyp.
     OPTIONAL {?g dcterms:title ?gLabel}.
@@ -41,7 +43,8 @@ SELECT DISTINCT
 (GROUP_CONCAT(DISTINCT ?nadrazenyPojem ; SEPARATOR=", ") AS ?nadrazenyPojemPole)
 WHERE {{
   GRAPH <{glosar_graph}> {{
-    ?g skos:hasTopConcept ?pojem .
+    # ?g skos:hasTopConcept ?pojem .
+    ?pojem a skos:Concept . # Vrací lepší výsledky
     ?pojem a ?rdfType .
     OPTIONAL {{ ?pojem skos:prefLabel ?label }}
     OPTIONAL {{ ?pojem skos:altLabel ?altLabel }}
@@ -53,12 +56,12 @@ WHERE {{
   GRAPH <{model_graph}> {{
     OPTIONAL {{ ?pojem a ?typObjektu }}.
     OPTIONAL {{ ?pojem dc:source ?pojemZdroj }}.
-    BIND (IF(?typObjektu = z-sgov-pojem:typ-vztahu, "vztah", 
+    BIND (IF(?typObjektu = z-sgov-pojem:vztah, "vztah", 
               IF(?typObjektu=z-sgov-pojem:role, "role","objekt")) AS ?typObjektuStr)
     OPTIONAL {{ ?pojem rdfs:subClassOf ?pojemJePodtridou 
       FILTER(!STRSTARTS(LCASE(STR(?pojemJePodtridou)), "_:"))
     }}.
-    FILTER(!STRSTARTS(LCASE(STR(?pojemJePodtridou)), "_:"))
+    # FILTER(!STRSTARTS(LCASE(STR(?pojemJePodtridou)), "_:"))
   }}
 }}
 GROUP BY ?pojem ?label ?altLabel ?definition ?poznamka ?pojemZdroj
