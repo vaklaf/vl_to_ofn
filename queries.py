@@ -41,6 +41,7 @@ SELECT DISTINCT
 (GROUP_CONCAT(DISTINCT ?typObjektuStr ; SEPARATOR=", ") AS ?typObjektuPole) 
 (GROUP_CONCAT(DISTINCT ?pojemJePodtridou ; SEPARATOR=", ") AS ?pojemJePodtridouPole)
 (GROUP_CONCAT(DISTINCT ?nadrazenyPojem ; SEPARATOR=", ") AS ?nadrazenyPojemPole)
+(GROUP_CONCAT(DISTINCT ?pojemExactMatch ; SEPARATOR=", ") AS ?pojemExactMatchPole)
 WHERE {{
   GRAPH <{glosar_graph}> {{
     # ?g skos:hasTopConcept ?pojem .
@@ -52,6 +53,7 @@ WHERE {{
     OPTIONAL {{ ?pojem skos:scopeNote ?poznamka }}
     OPTIONAL {{ ?pojem skos:broader ?nadrazenyPojem }}.
     OPTIONAL {{ ?pojem dc:source ?pojemZdroj }}
+    OPTIONAL {{ ?pojem skos:exactMatch ?pojemExactMatch }}.
   }}
   GRAPH <{model_graph}> {{
     OPTIONAL {{ ?pojem a ?typObjektu }}.
