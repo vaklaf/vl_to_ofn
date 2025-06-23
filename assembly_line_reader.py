@@ -79,6 +79,7 @@ def read_data_from_assembly_line():
             glosar_graph = f"{basic_graf}glosář"
             model_graph = f"{basic_graf}model"
             query_items = query_items_template.format(glosar_graph=glosar_graph, model_graph=model_graph)
+         
             sparql.setQuery(query_items)
             items_results = sparql.queryAndConvert()
 
@@ -93,15 +94,19 @@ def read_data_from_assembly_line():
                         "label": {},
                         "altLabel": {},
                         "definition": {},
-                        "poznamka": {},
+                        "poznamka": {},  # <-- přidat tuto inicializaci
                         "typObjektu": [to.strip() for to in result.get("typObjektuPole", {}).get("value", "").split(',') if len(to.strip()) > 1],
                     }
+                    # # Přidej poznámku, pokud existuje
+                    # if "poznamka" in result and "xml:lang" in result["poznamka"]:
+                    #     lang = result["poznamka"]["xml:lang"]
+                    #     concept["poznamka"][lang] = result["poznamka"]["value"]
                     # Nadřazený pojem
                     if result.get("nadrazenyPojemPole", {}).get("value"):
                         concept["nadrazenyPojem"] = [x.strip() for x in result["nadrazenyPojemPole"]["value"].split(',') if x.strip()]
                     # Zdroj
                     if result.get("pojemZdroj", {}).get("value"):
-                        concept["zdroj"] = result["pojemZdroj"]["value"]
+                        concept["zdroj"] = [x.strip() for x in  result["pojemZdroj"]["value"].split(',') if x.strip()]
                     glossary["pojmy"].append(concept)
 
                 # label
@@ -113,11 +118,19 @@ def read_data_from_assembly_line():
                     lang = result["altLabel"]["xml:lang"]
                     concept["altLabel"][lang] = result["altLabel"]["value"]
                 # definition
-                if "definition" in result and "xml:lang" in result["definition"]:
+                if (
+                    "definition" in result 
+                    and "xml:lang" in result["definition"]
+                    and result["definition"].get("value", "").strip()  # pouze pokud není prázdné
+                ):
                     lang = result["definition"]["xml:lang"]
                     concept["definition"][lang] = result["definition"]["value"]
-                # poznámka
-                if "poznamka" in result and "xml:lang" in result["poznamka"]:
+                # poznámka – stejně jako label, přidávej pouze pokud jsou data
+                if (
+                    "poznamka" in result
+                    and "xml:lang" in result["poznamka"]
+                    and result["poznamka"].get("value", "").strip()  # pouze pokud není prázdné
+                ):
                     lang = result["poznamka"]["xml:lang"]
                     concept["poznamka"][lang] = result["poznamka"]["value"]
 

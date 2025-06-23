@@ -126,7 +126,7 @@ cython_debug/
 # Custom settings
 *.local
 *.json
-*.jsonld
+*.json-ld
 *.yaml
 *.sparqlbook
 *.csv

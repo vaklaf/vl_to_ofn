@@ -1,7 +1,7 @@
 from pathlib import Path
 from uuid import uuid4
 
-def create_target_filename(output_dir, extension="jsonld")->Path:
+def create_target_filename(output_dir, extension="json-ld")->Path:
     """Create a target filename with the given base name and extension."""
     name = str(uuid4())   
     return output_dir /  f"{name}.{extension}"
