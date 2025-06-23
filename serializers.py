@@ -44,6 +44,8 @@ def serializuj_slovnik_do_jsonld(graf, data):
             pojem_json["poznámka"] = pojem["poznamka"]
         if pojem.get("nadrazenyPojem"):
             pojem_json["nadřazený-pojem"] = pojem["nadrazenyPojem"]
+        if pojem.get("exactMatch"):
+            pojem_json["ekvivalentní-pojem"] = pojem["exactMatch"]
         if pojem.get("zdroj"):
             pojem_json["související-ustanovení-právního-předpisu"] = pojem["zdroj"]
 

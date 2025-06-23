@@ -107,6 +107,9 @@ def read_data_from_assembly_line():
                     # Zdroj
                     if result.get("pojemZdroj", {}).get("value"):
                         concept["zdroj"] = [x.strip() for x in  result["pojemZdroj"]["value"].split(',') if x.strip()]
+                    # Exact match
+                    if result.get("pojemExactMatchPole", {}).get("value"):
+                        concept["exactMatch"] = [x.strip() for x in result["pojemExactMatchPole"]["value"].split(',') if x.strip()]
                     glossary["pojmy"].append(concept)
 
                 # label
