@@ -102,8 +102,13 @@ def read_data_from_assembly_line():
                     #     lang = result["poznamka"]["xml:lang"]
                     #     concept["poznamka"][lang] = result["poznamka"]["value"]
                     # Nadřazený pojem
-                    if result.get("nadrazenyPojemPole", {}).get("value"):
-                        concept["nadrazenyPojem"] = [x.strip() for x in result["nadrazenyPojemPole"]["value"].split(',') if x.strip()]
+                    # if result.get("nadrazenyPojemPole", {}).get("value"):
+                    #     concept["nadrazenyPojem"] = [x.strip() for x in result["nadrazenyPojemPole"]["value"].split(',') if x.strip()]
+                    # ISSUE 0003-BUG-not-correct-usage-skos-borader
+                    # nesprávné použití skos:broader
+                    # oprava 24.6.2025 - VJ
+                    if result.get("pojemJePodtridouPole", {}).get("value"):
+                        concept["nadrazenyPojem"] = [x.strip() for x in result["pojemJePodtridouPole"]["value"].split(',') if x.strip()]
                     # Zdroj
                     if result.get("pojemZdroj", {}).get("value"):
                         concept["zdroj"] = [x.strip() for x in  result["pojemZdroj"]["value"].split(',') if x.strip()]
