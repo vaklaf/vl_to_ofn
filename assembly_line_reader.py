@@ -41,13 +41,30 @@ if not SPARQL_ENDPOINT:
 sparql = SPARQLWrapper(SPARQL_ENDPOINT)
 sparql.setReturnFormat(JSON)
 
-GLSSARIES_FILES = {}
+GLOSSARIES_FILES = {}
 
 
 def register_glossary_file(glosar_graph, file_name):
     """ Registers the glossary file path for a given graph."""
-    GLSSARIES_FILES[glosar_graph] = file_name
+    GLOSSARIES_FILES[glosar_graph] = file_name
     print(f"Registered glossary graph: {glosar_graph} with file: {file_name}")
+    
+def get_restrictions():
+    """ Returns the restrictions from the SPARQL endpoint."""
+    sparql.setQuery("""
+    PREFIX owl: <http://www.w3.org/2002/07/owl#>
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    
+    SELECT ?restriction ?list
+    WHERE {
+        ?restriction a owl:Restriction .
+        ?restriction owl:intersectionOf ?list .
+    }
+    """)
+    
+    results = sparql.queryAndConvert()
+    
+    return results["results"]["bindings"]
 
 def read_data_from_assembly_line():
     """ Reads data from the assembly line and returns it."""
@@ -57,9 +74,9 @@ def read_data_from_assembly_line():
         glossaries = {}
 
         for result in results["results"]["bindings"]:
-            graf = result["graf"]["value"]
-            glossary = glossaries.setdefault(graf, {
-                "typ": [t.strip() for t in result["grafTypStrPole"]["value"].split(",")],
+            vocabulary = result["vocabulary"]["value"]
+            glossary = glossaries.setdefault(vocabulary, {
+                #"typ": [t.strip() for t in result["grafTypStrPole"]["value"].split(",")],
                 "title": {},
                 "pojmy": []
             })
@@ -73,12 +90,15 @@ def read_data_from_assembly_line():
             if "grafCreated" in result and "value" in result["grafCreated"]:
                 glossary["created"] = result["grafCreated"]["value"]
 
-        for graf, glossary in glossaries.items():
+        for vocabulary, glossary in glossaries.items():
             # Sestavení názvů grafů
-            basic_graf = graf.rsplit("/", 1)[0] + "/"
-            glosar_graph = f"{basic_graf}glosář"
-            model_graph = f"{basic_graf}model"
+            #basic_graf = graf.rsplit("/", 1)[0] + "/"
+            glosar_graph = f"{vocabulary}/glosář"
+            model_graph = f"{vocabulary}/model"
             query_items = query_items_template.format(glosar_graph=glosar_graph, model_graph=model_graph)
+            
+            print(query_items)
+            
          
             sparql.setQuery(query_items)
             items_results = sparql.queryAndConvert()
@@ -171,7 +191,7 @@ def write_glossaries_and_files_to_json():
     output_file = OUTPUT_DIR / "glossaries_files.json"
     
     with open(output_file, 'w', encoding='utf-8') as f:
-        json.dump(GLSSARIES_FILES, f, ensure_ascii=False, indent=4)
+        json.dump(GLOSSARIES_FILES, f, ensure_ascii=False, indent=4)
         
     print(f"Glossary files saved to {output_file}")
         

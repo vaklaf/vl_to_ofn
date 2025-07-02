@@ -4,7 +4,9 @@ def serializuj_slovnik_do_jsonld(graf, data):
     json_ld_data = {
         "@context": "https://ofn.gov.cz/slovníky/draft/kontexty/slovníky.jsonld",
         "iri": graf,
-        "typ": data["typ"],
+        #"typ": data["typ"],
+        # Nazhrazuji konstatnotu
+        "typ": ["Slovník", "Tezaurus", "Konceptuální model"],
         "název": data.get("title", {}),
         # "vytvořeno": {
         #     "typ": "Časový okamžik",
