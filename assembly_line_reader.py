@@ -13,10 +13,10 @@ import requests
 from SPARQLWrapper import SPARQLWrapper, JSON
 from dotenv import load_dotenv
 
-from queries import all_glossaries, query_items_template
+from queries import all_glossaries, query_items_template,query_term_type_template,query_term_restrictions_template
 from serializers import serializuj_slovnik_do_jsonld;
 from utilities import create_target_filename, clear_output_folder
-
+from enums.restrictions import EnumRestrictions
 
 # Load environment variables from .env file
 load_dotenv()
@@ -49,22 +49,33 @@ def register_glossary_file(glosar_graph, file_name):
     GLOSSARIES_FILES[glosar_graph] = file_name
     print(f"Registered glossary graph: {glosar_graph} with file: {file_name}")
     
-def get_restrictions():
-    """ Returns the restrictions from the SPARQL endpoint."""
-    sparql.setQuery("""
-    PREFIX owl: <http://www.w3.org/2002/07/owl#>
-    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+def get_restrictions(connection,term,vocabulary,glossary,model):
     
-    SELECT ?restriction ?list
-    WHERE {
-        ?restriction a owl:Restriction .
-        ?restriction owl:intersectionOf ?list .
-    }
-    """)
-    
-    results = sparql.queryAndConvert()
-    
+    query = query_term_restrictions_template.format(
+        vocabulary_graph = vocabulary,
+        graph_model = model,
+        graph_glossary = glossary,
+        term = term,
+        restrictions = " ".join(EnumRestrictions.to_list())
+    )
+    connection.setQuery(query)
+    results = connection.queryAndConvert()
     return results["results"]["bindings"]
+
+def get_term_type(connection,term,glossary,model):
+    
+    query = query_term_type_template.format(
+        graph_glossary =  glossary,
+        graph_model = model,
+        term = term
+    )
+
+    connection.setQuery(query)
+    
+    results = connection.queryAndConvert()
+    
+    return  results['results']['bindings']
+
 
 def read_data_from_assembly_line():
     """ Reads data from the assembly line and returns it."""
@@ -97,9 +108,6 @@ def read_data_from_assembly_line():
             model_graph = f"{vocabulary}/model"
             query_items = query_items_template.format(glosar_graph=glosar_graph, model_graph=model_graph)
             
-            print(query_items)
-            
-         
             sparql.setQuery(query_items)
             items_results = sparql.queryAndConvert()
 
@@ -132,9 +140,15 @@ def read_data_from_assembly_line():
                     # Zdroj
                     if result.get("pojemZdroj", {}).get("value"):
                         concept["zdroj"] = [x.strip() for x in  result["pojemZdroj"]["value"].split(',') if x.strip()]
+                    # ISSUE     
+                    # Definiční obor
+                    if result.get("definicniObor", {}).get("value"):
+                        concept["definicniObor"] = [x.strip() for x in result["definicniObor"]["value"].split(',') if x.strip()]
                     # Exact match
                     if result.get("pojemExactMatchPole", {}).get("value"):
                         concept["exactMatch"] = [x.strip() for x in result["pojemExactMatchPole"]["value"].split(',') if x.strip()]
+                    
+                    
                     glossary["pojmy"].append(concept)
 
                 # label
@@ -161,6 +175,9 @@ def read_data_from_assembly_line():
                 ):
                     lang = result["poznamka"]["xml:lang"]
                     concept["poznamka"][lang] = result["poznamka"]["value"]
+                    
+                # restrictions = get_restrictions(sparql,pojem_iri,vocabulary,glosar_graph,model_graph)
+                # print(restrictions)
 
         return glossaries
 
