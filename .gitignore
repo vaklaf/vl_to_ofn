@@ -132,3 +132,4 @@ cython_debug/
 *.csv
 *.tsv
 *.txt
+sparql_queries/dotaz.ts
