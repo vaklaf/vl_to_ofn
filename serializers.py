@@ -50,6 +50,8 @@ def serializuj_slovnik_do_jsonld(graf, data):
             pojem_json["ekvivalentní-pojem"] = pojem["exactMatch"]
         if pojem.get("zdroj"):
             pojem_json["související-ustanovení-právního-předpisu"] = pojem["zdroj"]
+        if pojem.get("definicniObor"):
+            pojem_json["definiční-obor"] = pojem["definicniObor"]
 
         json_ld_data["pojmy"].append(pojem_json)
 
