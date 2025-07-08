@@ -132,8 +132,5 @@ cython_debug/
 *.csv
 *.tsv
 *.txt
-<<<<<<< Updated upstream
-!requirements.txt
-=======
 *.ts
->>>>>>> Stashed changes
+
