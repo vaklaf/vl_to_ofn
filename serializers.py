@@ -4,7 +4,9 @@ def serializuj_slovnik_do_jsonld(graf, data):
     json_ld_data = {
         "@context": "https://ofn.gov.cz/slovníky/draft/kontexty/slovníky.jsonld",
         "iri": graf,
-        "typ": data["typ"],
+        #"typ": data["typ"],
+        # Nazhrazuji konstatnotu
+        "typ": ["Slovník", "Tezaurus", "Konceptuální model"],
         "název": data.get("title", {}),
         # "vytvořeno": {
         #     "typ": "Časový okamžik",
@@ -44,8 +46,12 @@ def serializuj_slovnik_do_jsonld(graf, data):
             pojem_json["poznámka"] = pojem["poznamka"]
         if pojem.get("nadrazenyPojem"):
             pojem_json["nadřazený-pojem"] = pojem["nadrazenyPojem"]
+        if pojem.get("exactMatch"):
+            pojem_json["ekvivalentní-pojem"] = pojem["exactMatch"]
         if pojem.get("zdroj"):
             pojem_json["související-ustanovení-právního-předpisu"] = pojem["zdroj"]
+        if pojem.get("definicniObor"):
+            pojem_json["definiční-obor"] = pojem["definicniObor"]
 
         json_ld_data["pojmy"].append(pojem_json)
 
