@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 from queries import all_glossaries, query_items_template,query_term_type_template,query_term_restrictions_template
 from serializers import serializuj_slovnik_do_jsonld;
 from utilities import create_target_filename, clear_output_folder
-from enums.restrictions import EnumRestrictions
+from enums.enum_restrictions import EnumRestrictions
 
 # Load environment variables from .env file
 load_dotenv()
