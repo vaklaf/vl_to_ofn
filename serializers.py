@@ -35,6 +35,14 @@ def serializuj_slovnik_do_jsonld(graf, data):
             #"typ": pojem.get("typObjektu", [])
             "typ":["Koncept", "Pojem"],
         }
+        
+        # Rozšířit pojem_json s typem objektu, pokud existuje   
+        if "typObjektu" in pojem:
+            if isinstance(pojem["typObjektu"], list):
+                pojem_json["typ"].extend(pojem["typObjektu"])
+            else:
+                pojem_json["typ"].append(pojem["typObjektu"])
+        
         # Přidej jazykové varianty, pokud existují
         if pojem.get("label"):
             pojem_json["název"] = pojem["label"]
