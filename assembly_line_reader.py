@@ -91,149 +91,172 @@ def write_glossaries_and_files_to_json(output_path):
 
 
 
-def read_data_from_assembly_line(sparql_endpoint,
-                             output_dir):
-
+def read_data_from_assembly_line(sparql_endpoint, output_dir, graphs_to_process=None):
     """ Reads data from the assembly line and returns it."""
     try:
         sparql = setup_sparql_connection(sparql_endpoint)
-        sparql.setQuery(all_glossaries)
-        results = sparql.queryAndConvert()
-        glossaries = {}
-
-        for result in results["results"]["bindings"]:
-            vocabulary = result["vocabulary"]["value"]
-            glossary = glossaries.setdefault(vocabulary, {
-                #"typ": [t.strip() for t in result["grafTypStrPole"]["value"].split(",")],
-                "title": {},
-                "pojmy": []
-            })
-            # Název podle jazyka
-            if "gLabel" in result and "xml:lang" in result["gLabel"]:
-                glossary["title"][result["gLabel"]["xml:lang"]] = result["gLabel"]["value"]
-            # Popis podle jazyka
-            if "gDescription" in result and "xml:lang" in result["gDescription"]:
-                glossary.setdefault("description", {})[result["gDescription"]["xml:lang"]] = result["gDescription"]["value"]
-            # Datum vytvoření
-            if "grafCreated" in result and "value" in result["grafCreated"]:
-                glossary["created"] = result["grafCreated"]["value"]
-
-        requiered_types = " ".join(EnumTermTypes.to_list())
-
-        
-        for vocabulary, glossary in glossaries.items():
-            # Sestavení názvů grafů
-            #basic_graf = graf.rsplit("/", 1)[0] + "/"
-            print(f"Processing vocabulary: {vocabulary}")
-            # Přidání názvu souboru pro slovník
-            glosar_graph = f"{vocabulary}/glosář"
-            model_graph = f"{vocabulary}/model"
-            query_items = query_items_full_template.format(
-                glosar_graph=glosar_graph, 
-                model_graph=model_graph,
-                terms_types=requiered_types )
-                
-    
-            
-            sparql.setQuery(query_items)
-            items_results = sparql.queryAndConvert()
-            
-            for result in items_results["results"]["bindings"]:
-                pojem_iri = result["pojem"]["value"]
-                print(f"Processing concept: {pojem_iri}")
-                # Najdi nebo vytvoř pojem podle IRI
-                concept = next((p for p in glossary["pojmy"] if p["iri"] == pojem_iri), None)
-                if not concept:
-                    concept = {
-                        "iri": pojem_iri,
-                        "label": {},
-                        "altLabel": {},
-                        "definition": {},
-                        "poznamka": {},  # <-- přidat tuto inicializaci
-                        "typObjektu": [],
-                    }
-                    # # Přidej poznámku, pokud existuje
-                    # if "poznamka" in result and "xml:lang" in result["poznamka"]:
-                    #     lang = result["poznamka"]["xml:lang"]
-                    #     concept["poznamka"][lang] = result["poznamka"]["value"]
-                    # Nadřazený pojem
-                    # if result.get("nadrazenyPojemPole", {}).get("value"):
-                    #     concept["nadrazenyPojem"] = [x.strip() for x in result["nadrazenyPojemPole"]["value"].split(',') if x.strip()]
-                    # ISSUE 0003-BUG-not-correct-usage-skos-borader
-                    # nesprávné použití skos:broader
-                    # oprava 24.6.2025 - VJ
-                    if result.get("pojemJePodtridouPole", {}).get("value"):
-                        concept["nadrazenyPojem"] = [x.strip() for x in result["pojemJePodtridouPole"]["value"].split(',') if x.strip()]
-                    # Zdroj
-                    if result.get("pojemZdroj", {}).get("value"):
-                        concept["zdroj"] = [x.strip() for x in  result["pojemZdroj"]["value"].split(',') if x.strip()]
-                    # ISSUE     
-                    # Definiční obor
-                    if result.get("definicniObor", {}).get("value"):
-                        concept["definicniObor"] = [x.strip() for x in result["definicniObor"]["value"].split(',') if x.strip()]
-                    # ISSUE 0002-Add restrictions
-                    # Typ objektu
-                    # Získání typu objektu
-                    print(f"Getting term type for: {pojem_iri}")
-                    type = EnumTermTypes.from_value(
-                        result.get("types", {}).get("value", "").split(",")[0] 
-                        if result.get("types") else None)
-                                                                                    
-                    if type and type[1] not in concept["typObjektu"]:
-                        concept["typObjektu"].append(type[1])
-                    
-                    # Zjišění zda se jdná o subjekt nebo objekt práva
-                    if type and type[0] == EnumTermTypes.OBJEKT:
-                        print(f"Getting alternative subject objects of right for: {pojem_iri}")
-                        altSubjObj = result.get("typObjSbjPole", {}).get("value","").split(",")[0] if result.get("typObjSbjPole") else None
-                        if not altSubjObj is None and altSubjObj.strip() != '':
-                            concept["typObjektu"].append(altSubjObj.strip())
-
-                    # Podobný pojem
-                    if result.get("pojemExactMatchPole", {}).get("value"):
-                        concept["exactMatch"] = [x.strip() for x in result["pojemExactMatchPole"]["value"].split(',') if x.strip()]
-                    
-                    
-                    glossary["pojmy"].append(concept)
-
-                # label
-                if "label" in result and "xml:lang" in result["label"]:
-                    lang = result["label"]["xml:lang"]
-                    concept["label"][lang] = result["label"]["value"]
-                # altLabel
-                if "altLabel" in result and "xml:lang" in result["altLabel"]:
-                    lang = result["altLabel"]["xml:lang"]
-                    concept["altLabel"][lang] = result["altLabel"]["value"]
-                # definition
-                if (
-                    "definition" in result 
-                    and "xml:lang" in result["definition"]
-                    and result["definition"].get("value", "").strip()  # pouze pokud není prázdné
-                ):
-                    lang = result["definition"]["xml:lang"]
-                    concept["definition"][lang] = result["definition"]["value"]
-                # poznámka – stejně jako label, přidávej pouze pokud jsou data
-                if (
-                    "poznamka" in result
-                    and "xml:lang" in result["poznamka"]
-                    and result["poznamka"].get("value", "").strip()  # pouze pokud není prázdné
-                ):
-                    lang = result["poznamka"]["xml:lang"]
-                    concept["poznamka"][lang] = result["poznamka"]["value"]
-                    
-                # restrictions = get_restrictions(sparql,pojem_iri,vocabulary,glosar_graph,model_graph)
-                # print(restrictions)
-                
-            
-                time.sleep(randint(1, 3))  # Random delay to avoid overwhelming the server
-            
-            # Serializace slovníku do JSON-LD
-            # --- Zápis do souboru ihned po zpracování jednoho grafu ---
-            json_ld_data = serializuj_slovnik_do_jsonld(vocabulary, glossary)
-            vocabulary_to_json(glosar_graph, json_ld_data, output_dir)
-            time.sleep(randint(1, 3))  # menší delay, protože je méně dotazů
-
-
+        # Pokud je zadán seznam grafů, vytvoř dotaz pouze na ně
+        if graphs_to_process:
+            glossaries = {}
+            for vocabulary in graphs_to_process:
+                print(f"Processing vocabulary: {vocabulary}")
+                glosar_graph = f"{vocabulary}/glosář"
+                model_graph = f"{vocabulary}/model"
+                glossary = {
+                    "title": {},
+                    "pojmy": []
+                }
+                # Dotaz na metadata slovníku (název, popis, created)
+                # Pokud potřebuješ, můžeš zde přidat dotaz na metadata
+                requiered_types = " ".join(EnumTermTypes.to_list())
+                query_items = query_items_full_template.format(
+                    glosar_graph=glosar_graph, 
+                    model_graph=model_graph,
+                    terms_types=requiered_types )
+                sparql.setQuery(query_items)
+                items_results = sparql.queryAndConvert()
+                for result in items_results["results"]["bindings"]:
+                    pojem_iri = result["pojem"]["value"]
+                    print(f"Processing concept: {pojem_iri}")
+                    concept = next((p for p in glossary["pojmy"] if p["iri"] == pojem_iri), None)
+                    if not concept:
+                        concept = {
+                            "iri": pojem_iri,
+                            "label": {},
+                            "altLabel": {},
+                            "definition": {},
+                            "poznamka": {},
+                            "typObjektu": [],
+                        }
+                        if result.get("pojemJePodtridouPole", {}).get("value"):
+                            concept["nadrazenyPojem"] = [x.strip() for x in result["pojemJePodtridouPole"]["value"].split(',') if x.strip()]
+                        if result.get("pojemZdroj", {}).get("value"):
+                            concept["zdroj"] = [x.strip() for x in  result["pojemZdroj"]["value"].split(',') if x.strip()]
+                        if result.get("definicniObor", {}).get("value"):
+                            concept["definicniObor"] = [x.strip() for x in result["definicniObor"]["value"].split(',') if x.strip()]
+                        print(f"Getting term type for: {pojem_iri}")
+                        type = EnumTermTypes.from_value(
+                            result.get("types", {}).get("value", "").split(",")[0] 
+                            if result.get("types") else None)
+                        if type and type[1] not in concept["typObjektu"]:
+                            concept["typObjektu"].append(type[1])
+                        if type and type[0] == EnumTermTypes.OBJEKT:
+                            print(f"Getting alternative subject objects of right for: {pojem_iri}")
+                            altSubjObj = result.get("typObjSbjPole", {}).get("value","").split(",")[0] if result.get("typObjSbjPole") else None
+                            if not altSubjObj is None and altSubjObj.strip() != '':
+                                concept["typObjektu"].append(altSubjObj.strip())
+                        if result.get("pojemExactMatchPole", {}).get("value"):
+                            concept["exactMatch"] = [x.strip() for x in result["pojemExactMatchPole"]["value"].split(',') if x.strip()]
+                        glossary["pojmy"].append(concept)
+                    if "label" in result and "xml:lang" in result["label"]:
+                        lang = result["label"]["xml:lang"]
+                        concept["label"][lang] = result["label"]["value"]
+                    if "altLabel" in result and "xml:lang" in result["altLabel"]:
+                        lang = result["altLabel"]["xml:lang"]
+                        concept["altLabel"][lang] = result["altLabel"]["value"]
+                    if (
+                        "definition" in result 
+                        and "xml:lang" in result["definition"]
+                        and result["definition"].get("value", "").strip()
+                    ):
+                        lang = result["definition"]["xml:lang"]
+                        concept["definition"][lang] = result["definition"]["value"]
+                    if (
+                        "poznamka" in result
+                        and "xml:lang" in result["poznamka"]
+                        and result["poznamka"].get("value", "").strip()
+                    ):
+                        lang = result["poznamka"]["xml:lang"]
+                        concept["poznamka"][lang] = result["poznamka"]["value"]
+                    time.sleep(randint(1, 3))
+                json_ld_data = serializuj_slovnik_do_jsonld(vocabulary, glossary)
+                vocabulary_to_json(glosar_graph, json_ld_data, output_dir)
+                time.sleep(randint(1, 3))
+        else:
+            # Původní chování: zpracuj všechny slovníky v databázi
+            sparql.setQuery(all_glossaries)
+            results = sparql.queryAndConvert()
+            glossaries = {}
+            for result in results["results"]["bindings"]:
+                vocabulary = result["vocabulary"]["value"]
+                glossary = glossaries.setdefault(vocabulary, {
+                    "title": {},
+                    "pojmy": []
+                })
+                if "gLabel" in result and "xml:lang" in result["gLabel"]:
+                    glossary["title"][result["gLabel"]["xml:lang"]] = result["gLabel"]["value"]
+                if "gDescription" in result and "xml:lang" in result["gDescription"]:
+                    glossary.setdefault("description", {})[result["gDescription"]["xml:lang"]] = result["gDescription"]["value"]
+                if "grafCreated" in result and "value" in result["grafCreated"]:
+                    glossary["created"] = result["grafCreated"]["value"]
+            requiered_types = " ".join(EnumTermTypes.to_list())
+            for vocabulary, glossary in glossaries.items():
+                print(f"Processing vocabulary: {vocabulary}")
+                glosar_graph = f"{vocabulary}/glosář"
+                model_graph = f"{vocabulary}/model"
+                query_items = query_items_full_template.format(
+                    glosar_graph=glosar_graph, 
+                    model_graph=model_graph,
+                    terms_types=requiered_types )
+                sparql.setQuery(query_items)
+                items_results = sparql.queryAndConvert()
+                for result in items_results["results"]["bindings"]:
+                    pojem_iri = result["pojem"]["value"]
+                    print(f"Processing concept: {pojem_iri}")
+                    concept = next((p for p in glossary["pojmy"] if p["iri"] == pojem_iri), None)
+                    if not concept:
+                        concept = {
+                            "iri": pojem_iri,
+                            "label": {},
+                            "altLabel": {},
+                            "definition": {},
+                            "poznamka": {},
+                            "typObjektu": [],
+                        }
+                        if result.get("pojemJePodtridouPole", {}).get("value"):
+                            concept["nadrazenyPojem"] = [x.strip() for x in result["pojemJePodtridouPole"]["value"].split(',') if x.strip()]
+                        if result.get("pojemZdroj", {}).get("value"):
+                            concept["zdroj"] = [x.strip() for x in  result["pojemZdroj"]["value"].split(',') if x.strip()]
+                        if result.get("definicniObor", {}).get("value"):
+                            concept["definicniObor"] = [x.strip() for x in result["definicniObor"]["value"].split(',') if x.strip()]
+                        print(f"Getting term type for: {pojem_iri}")
+                        type = EnumTermTypes.from_value(
+                            result.get("types", {}).get("value", "").split(",")[0] 
+                            if result.get("types") else None)
+                        if type and type[1] not in concept["typObjektu"]:
+                            concept["typObjektu"].append(type[1])
+                        if type and type[0] == EnumTermTypes.OBJEKT:
+                            print(f"Getting alternative subject objects of right for: {pojem_iri}")
+                            altSubjObj = result.get("typObjSbjPole", {}).get("value","").split(",")[0] if result.get("typObjSbjPole") else None
+                            if not altSubjObj is None and altSubjObj.strip() != '':
+                                concept["typObjektu"].append(altSubjObj.strip())
+                        if result.get("pojemExactMatchPole", {}).get("value"):
+                            concept["exactMatch"] = [x.strip() for x in result["pojemExactMatchPole"]["value"].split(',') if x.strip()]
+                        glossary["pojmy"].append(concept)
+                    if "label" in result and "xml:lang" in result["label"]:
+                        lang = result["label"]["xml:lang"]
+                        concept["label"][lang] = result["label"]["value"]
+                    if "altLabel" in result and "xml:lang" in result["altLabel"]:
+                        lang = result["altLabel"]["xml:lang"]
+                        concept["altLabel"][lang] = result["altLabel"]["value"]
+                    if (
+                        "definition" in result 
+                        and "xml:lang" in result["definition"]
+                        and result["definition"].get("value", "").strip()
+                    ):
+                        lang = result["definition"]["xml:lang"]
+                        concept["definition"][lang] = result["definition"]["value"]
+                    if (
+                        "poznamka" in result
+                        and "xml:lang" in result["poznamka"]
+                        and result["poznamka"].get("value", "").strip()
+                    ):
+                        lang = result["poznamka"]["xml:lang"]
+                        concept["poznamka"][lang] = result["poznamka"]["value"]
+                    time.sleep(randint(1, 3))
+                json_ld_data = serializuj_slovnik_do_jsonld(vocabulary, glossary)
+                vocabulary_to_json(glosar_graph, json_ld_data, output_dir)
+                time.sleep(randint(1, 3))
     except requests.exceptions.RequestException as e:
         print(f"Error connecting to SPARQL endpoint: {e}")
         exit(1)
@@ -243,22 +266,15 @@ def read_data_from_assembly_line(sparql_endpoint,
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
         exit(1)
-        
-        
+
 def run_assebmly_line_reader(
     sparql_endpoint,
     output_dir,
-    glossaries_file
+    glossaries_file,
+    graphs_to_process=None
 ):
     """ Main function to read data from the assembly line and write it to JSON-LD files."""
-    
-    read_data_from_assembly_line(sparql_endpoint,
-    output_dir,)
-    # for graf, data in grafy.items():
-    #     json_ld_data = serializuj_slovnik_do_jsonld(graf, data)
-        
-    #     write_data_to_jsonl(graf, json_ld_data)
-    #     time.sleep(randint(1, 5))  # Random delay to avoid overwhelming the server
+    read_data_from_assembly_line(sparql_endpoint, output_dir, graphs_to_process)
     write_glossaries_and_files_to_json(glossaries_file)
 
 
