@@ -1,7 +1,6 @@
 import json
-import os
 from referencing import Registry, Resource
-from jsonschema import validate, ValidationError, Draft202012Validator
+from jsonschema import ValidationError, Draft202012Validator
 
 GLOSSARIES_FILE = "./output/glossaries_files.json"
 REPORT_FILE = "./output/validation_report.txt"
@@ -30,13 +29,13 @@ registry = (
     .with_resource("https://ofn.gov.cz/základní-datové-typy/2020-07-01/schémata/digitální_objekt.json", Resource.from_contents(dt_digitalni_objekt))
 )
 
-def validate_glossaries():
-    with open(GLOSSARIES_FILE, encoding="utf-8") as f:
+def validate_glossaries(glossaries_file, report_file,output_dir):
+    with open(glossaries_file, encoding="utf-8") as f:
         glossaries = json.load(f)
 
     report_lines = []
     for idx, iri in enumerate(glossaries):
-        glossary_file = f'./output/{glossaries[iri]}'
+        glossary_file = f'{output_dir}/{glossaries[iri]}'
         try:
             with open(glossary_file, encoding="utf-8") as gf:
                 glossary_data = json.load(gf)
@@ -54,7 +53,7 @@ def validate_glossaries():
                 f"Glossary {idx+1} ({glossary_file}): ERROR\n{str(e)}\n"
             )
 
-    with open(REPORT_FILE, "w", encoding="utf-8") as f:
+    with open(report_file, "w", encoding="utf-8") as f:
         f.write("\n".join(report_lines))
 
 if __name__ == "__main__":
