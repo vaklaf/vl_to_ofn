@@ -19,7 +19,6 @@ WHERE {
   }
 }
 ORDER BY ?vocabulary
-limit 5
 """
 
 query_items_template = """
@@ -97,6 +96,7 @@ WHERE
   BIND (IF(STRSTARTS(lcase(str(?label)),"objekt"),"Typ objektu práva","Typ subjektu práva") AS ?typObjSbj)
 }}
 """
+
 query_term_restrictions_template="""
 PREFIX owl: <http://www.w3.org/2002/07/owl#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -140,11 +140,11 @@ SELECT DISTINCT
   ?poznamka
   ?pojemZdroj
   ?definicniObor
+  (GROUP_CONCAT(DISTINCT ?type ; SEPARATOR=", ") AS ?types)
   (GROUP_CONCAT(DISTINCT ?typObjektuStr ; SEPARATOR=", ") AS ?typObjektuPole)
   (GROUP_CONCAT(DISTINCT ?pojemJePodtridou ; SEPARATOR=", ") AS ?pojemJePodtridouPole)
   (GROUP_CONCAT(DISTINCT ?nadrazenyPojem ; SEPARATOR=", ") AS ?nadrazenyPojemPole)
   (GROUP_CONCAT(DISTINCT ?pojemExactMatch ; SEPARATOR=", ") AS ?pojemExactMatchPole)
-  (GROUP_CONCAT(DISTINCT ?type ; SEPARATOR=", ") AS ?types)
   (GROUP_CONCAT(DISTINCT ?typObjSbj ; SEPARATOR=", ") AS ?typObjSbjPole)
 WHERE {{
   GRAPH <{glosar_graph}> {{
@@ -156,15 +156,6 @@ WHERE {{
     OPTIONAL {{ ?pojem skos:broader ?nadrazenyPojem }}.
     OPTIONAL {{ ?pojem dc:source ?pojemZdroj }}
     OPTIONAL {{ ?pojem skos:exactMatch ?pojemExactMatch }}.
-    # --- typObjSbj (alt subject objects) ---
-    OPTIONAL {{
-      ?pojem ^skos:narrowerTransitive ?altSubjectObject .
-      ?altSubjectObject a <http://onto.fel.cvut.cz/ontologies/ufo/object>, owl:Class ;
-        skos:prefLabel ?altLabelSbj .
-      FILTER(LANG(LCASE(?altLabelSbj))="cs" && STRENDS(LCASE(?altLabelSbj),"práva"))
-      ?altSubjectObject skos:inScheme <https://slovník.gov.cz/veřejný-sektor/glosář> .
-      BIND (IF(STRSTARTS(lcase(str(?altLabelSbj)),"objekt"),"Typ objektu práva","Typ subjektu práva") AS ?typObjSbj)
-    }}
   }}
   GRAPH <{model_graph}> {{
     OPTIONAL {{ ?pojem a ?typObjektu }}.
@@ -182,6 +173,15 @@ WHERE {{
       ?pojem a ?type .
     }}
   }}
+   # --- typObjSbj (alt subject objects) ---
+    OPTIONAL {{
+      ?pojem ^skos:narrowerTransitive ?altSubjectObject .
+      ?altSubjectObject a <http://onto.fel.cvut.cz/ontologies/ufo/object>, owl:Class ;
+        skos:prefLabel ?altLabelSbj .
+      FILTER(LANG(LCASE(?altLabelSbj))="cs" && STRENDS(LCASE(?altLabelSbj),"práva"))
+      ?altSubjectObject skos:inScheme <https://slovník.gov.cz/veřejný-sektor/glosář> .
+      BIND (IF(STRSTARTS(lcase(str(?altLabelSbj)),"objekt"),"Typ objektu práva","Typ subjektu práva") AS ?typObjSbj)
+    }}
 }}
 GROUP BY ?pojem ?label ?altLabel ?definition ?poznamka ?pojemZdroj ?definicniObor
 ORDER BY ?pojem

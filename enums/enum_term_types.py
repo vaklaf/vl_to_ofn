@@ -13,6 +13,9 @@ class EnumTermTypes(Enum):
     @classmethod
     def from_value(cls, value):
         """Returns the enum member name capitalized according to the value."""
+        if value is None:
+            return None
+        
         for member in cls:
             if member.value == "<"+value+">": 
                 return (member,member.name.capitalize())

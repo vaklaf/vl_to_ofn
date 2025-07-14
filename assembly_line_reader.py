@@ -13,7 +13,7 @@ import requests
 
 from SPARQLWrapper import SPARQLWrapper, JSON
 
-from queries import all_glossaries, query_items_template,query_term_type_template,query_term_alt_subject_objects_template,query_term_restrictions_template
+from queries import all_glossaries, query_items_full_template,query_term_restrictions_template
 from serializers import serializuj_slovnik_do_jsonld;
 from utilities import generate_target_filename
 from enums.enum_restrictions import EnumRestrictions
@@ -34,40 +34,40 @@ def register_glossary_file(glosar_graph, file_name):
     GLOSSARIES_FILES[glosar_graph] = file_name
     print(f"Registered glossary graph: {glosar_graph} with file: {file_name}")
     
-def get_restrictions(connection,term,vocabulary,glossary,model):
+# def get_restrictions(connection,term,vocabulary,glossary,model):
     
-    query = query_term_restrictions_template.format(
-        vocabulary_graph = vocabulary,
-        graph_model = model,
-        graph_glossary = glossary,
-        term = term,
-        restrictions = " ".join(EnumRestrictions.to_list())
-    )
-    connection.setQuery(query)
-    results = connection.queryAndConvert()
-    return results["results"]["bindings"]
+#     query = query_term_restrictions_template.format(
+#         vocabulary_graph = vocabulary,
+#         graph_model = model,
+#         graph_glossary = glossary,
+#         term = term,
+#         restrictions = " ".join(EnumRestrictions.to_list())
+#     )
+#     connection.setQuery(query)
+#     results = connection.queryAndConvert()
+#     return results["results"]["bindings"]
 
-def get_term_type(connection,term):
+# def get_term_type(connection,term):
     
-    query = query_term_type_template.format(
-        term = term,
-        terms_types=" ".join(EnumTermTypes.to_list())
-    )
+#     query = query_term_type_template.format(
+#         term = term,
+#         terms_types=" ".join(EnumTermTypes.to_list())
+#     )
 
-    connection.setQuery(query)
+#     connection.setQuery(query)
     
-    results = connection.queryAndConvert()
+#     results = connection.queryAndConvert()
     
-    return  EnumTermTypes.from_value(results['results']['bindings'][0]['type']['value']) if results['results']['bindings'] else None
+#    return  EnumTermTypes.from_value(results['results']['bindings'][0]['type']['value']) if results['results']['bindings'] else None
 
-def get_term_alt_subject_objects(connection, term):
-    """ Returns the alternative subject objects for a given term."""
-    query = query_term_alt_subject_objects_template.format(term=term)
-    connection.setQuery(query)
+# def get_term_alt_subject_objects(connection, term):
+#     """ Returns the alternative subject objects for a given term."""
+#     query = query_term_alt_subject_objects_template.format(term=term)
+#     connection.setQuery(query)
     
-    results = connection.queryAndConvert()
+#     results = connection.queryAndConvert()
     
-    return results['results']['bindings'][0]['typObjSbj']['value'] if results['results']['bindings'] else None
+#     return results['results']['bindings'][0]['typObjSbj']['value'] if results['results']['bindings'] else None
 
 def vocabulary_to_json(glosar_graph, data,output_dir):
     """ Writes the data to a JSON-LD file."""
@@ -118,6 +118,9 @@ def read_data_from_assembly_line(sparql_endpoint,
             if "grafCreated" in result and "value" in result["grafCreated"]:
                 glossary["created"] = result["grafCreated"]["value"]
 
+        requiered_types = " ".join(EnumTermTypes.to_list())
+
+        
         for vocabulary, glossary in glossaries.items():
             # Sestavení názvů grafů
             #basic_graf = graf.rsplit("/", 1)[0] + "/"
@@ -125,11 +128,16 @@ def read_data_from_assembly_line(sparql_endpoint,
             # Přidání názvu souboru pro slovník
             glosar_graph = f"{vocabulary}/glosář"
             model_graph = f"{vocabulary}/model"
-            query_items = query_items_template.format(glosar_graph=glosar_graph, model_graph=model_graph)
+            query_items = query_items_full_template.format(
+                glosar_graph=glosar_graph, 
+                model_graph=model_graph,
+                terms_types=requiered_types )
+                
+    
             
             sparql.setQuery(query_items)
             items_results = sparql.queryAndConvert()
-
+            
             for result in items_results["results"]["bindings"]:
                 pojem_iri = result["pojem"]["value"]
                 print(f"Processing concept: {pojem_iri}")
@@ -167,19 +175,20 @@ def read_data_from_assembly_line(sparql_endpoint,
                     # Typ objektu
                     # Získání typu objektu
                     print(f"Getting term type for: {pojem_iri}")
-                    type = get_term_type(sparql, pojem_iri)
+                    type = EnumTermTypes.from_value(
+                        result.get("types", {}).get("value", "").split(",")[0] 
+                        if result.get("types") else None)
+                                                                                    
                     if type and type[1] not in concept["typObjektu"]:
                         concept["typObjektu"].append(type[1])
                     
                     # Zjišění zda se jdná o subjekt nebo objekt práva
                     if type and type[0] == EnumTermTypes.OBJEKT:
                         print(f"Getting alternative subject objects of right for: {pojem_iri}")
-                        altSubjObj = get_term_alt_subject_objects(sparql, pojem_iri)
-                        if altSubjObj:
-                            concept["typObjektu"].append(altSubjObj)
+                        altSubjObj = result.get("typObjSbjPole", {}).get("value","").split(",")[0] if result.get("typObjSbjPole") else None
+                        if not altSubjObj is None and altSubjObj.strip() != '':
+                            concept["typObjektu"].append(altSubjObj.strip())
 
-
-                    
                     # Podobný pojem
                     if result.get("pojemExactMatchPole", {}).get("value"):
                         concept["exactMatch"] = [x.strip() for x in result["pojemExactMatchPole"]["value"].split(',') if x.strip()]
@@ -216,7 +225,7 @@ def read_data_from_assembly_line(sparql_endpoint,
                 # print(restrictions)
                 
             
-                time.sleep(randint(1, 5))  # Random delay to avoid overwhelming the server
+                time.sleep(randint(1, 3))  # Random delay to avoid overwhelming the server
             
             # Serializace slovníku do JSON-LD
             # --- Zápis do souboru ihned po zpracování jednoho grafu ---
