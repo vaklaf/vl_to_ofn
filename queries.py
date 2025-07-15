@@ -118,12 +118,12 @@ WHERE
 }}
 """
 
-query_term_restrictions_template="""
+query_term_relation_restrictions_template="""
 PREFIX owl: <http://www.w3.org/2002/07/owl#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
 SELECT DISTINCT ?term ?onProperty ?inverseOnProperty ?restrictionPred ?onClass ?target
-FROM <{vocabulary_graph}>
+FROM <{vocabulary}>
 FROM <{graph_model}>
 FROM <{graph_glossary}>
 WHERE 
@@ -140,11 +140,38 @@ WHERE
     {restrictions}
   }}
   ?restriction ?restrictionPred ?target .
-  FILTER(!ISBLANK(?target))
+  FILTER(!ISBLANK(?target) ) # Only properties ending with a digit
 }}
 ORDER BY ?term ?onProperty ?inverseOnProperty ?restrictionPred ?onClass ?target
 
 """
+query_term_property_restrictions_template="""
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT DISTINCT ?term ?onProperty ?inverseOnProperty ?restrictionPred ?onClass ?target
+FROM <{vocabulary}>
+FROM <{graph_model}>
+FROM <{graph_glossary}>
+WHERE 
+{{
+  BIND(<{term}> AS ?term).
+  ?term rdfs:subClassOf ?restriction .
+  ?restriction a owl:Restriction .
+  OPTIONAL {{ ?restriction owl:onProperty ?onProperty .
+    FILTER(!ISBLANK(?onProperty)) }}
+  OPTIONAL {{ ?restriction owl:onProperty [owl:inverseOf ?inverseOnProperty] . }}
+  OPTIONAL {{ ?restriction owl:onClass ?onClass . }}
+  FILTER(bound(?onProperty) || bound(?inverseOnProperty))
+  VALUES ?restrictionPred {{
+    {restrictions}
+  }}
+  ?restriction ?restrictionPred ?target .
+  FILTER(!ISBLANK(?target)) # Only properties ending with a digit
+}}
+ORDER BY ?term ?onProperty ?inverseOnProperty ?restrictionPred ?onClass ?target
+"""
+
 
 query_items_full_template = """
 PREFIX dc: <http://purl.org/dc/terms/>
@@ -160,13 +187,13 @@ SELECT DISTINCT
   ?definition
   ?poznamka
   ?pojemZdroj
-  ?definicniObor
+  # ?definicniObor Zjišťuje se samostatně.
   (GROUP_CONCAT(DISTINCT ?type ; SEPARATOR=", ") AS ?types)
   (GROUP_CONCAT(DISTINCT ?typObjektuStr ; SEPARATOR=", ") AS ?typObjektuPole)
   (GROUP_CONCAT(DISTINCT ?pojemJePodtridou ; SEPARATOR=", ") AS ?pojemJePodtridouPole)
   (GROUP_CONCAT(DISTINCT ?nadrazenyPojem ; SEPARATOR=", ") AS ?nadrazenyPojemPole)
   (GROUP_CONCAT(DISTINCT ?pojemExactMatch ; SEPARATOR=", ") AS ?pojemExactMatchPole)
-  (GROUP_CONCAT(DISTINCT ?typObjSbj ; SEPARATOR=", ") AS ?typObjSbjPole)
+  #(GROUP_CONCAT(DISTINCT ?typObjSbj ; SEPARATOR=", ") AS ?typObjSbjPole)
 WHERE {{
   GRAPH <{glosar_graph}> {{
     ?pojem a skos:Concept .
@@ -181,7 +208,7 @@ WHERE {{
   GRAPH <{model_graph}> {{
     OPTIONAL {{ ?pojem a ?typObjektu }}.
     OPTIONAL {{ ?pojem dc:source ?pojemZdroj }}.
-    OPTIONAL {{ ?pojem rdfs:domain ?definicniObor }}
+    # OPTIONAL {{ ?pojem rdfs:domain ?definicniObor }}
     BIND (IF(?typObjektu = z-sgov-pojem:vztah, "vztah", 
               IF(?typObjektu=z-sgov-pojem:role, "role","objekt")) AS ?typObjektuStr)
     OPTIONAL {{ ?pojem rdfs:subClassOf ?pojemJePodtridou 
@@ -195,14 +222,14 @@ WHERE {{
     }}
   }}
    # --- typObjSbj (alt subject objects) ---
-    OPTIONAL {{
-      ?pojem ^skos:narrowerTransitive ?altSubjectObject .
-      ?altSubjectObject a <http://onto.fel.cvut.cz/ontologies/ufo/object>, owl:Class ;
-        skos:prefLabel ?altLabelSbj .
-      FILTER(LANG(LCASE(?altLabelSbj))="cs" && STRENDS(LCASE(?altLabelSbj),"práva"))
-      ?altSubjectObject skos:inScheme <https://slovník.gov.cz/veřejný-sektor/glosář> .
-      BIND (IF(STRSTARTS(lcase(str(?altLabelSbj)),"objekt"),"Typ objektu práva","Typ subjektu práva") AS ?typObjSbj)
-    }}
+    # OPTIONAL {{
+    #   ?pojem ^skos:narrowerTransitive ?altSubjectObject .
+    #   ?altSubjectObject a <http://onto.fel.cvut.cz/ontologies/ufo/object>, owl:Class ;
+    #     skos:prefLabel ?altLabelSbj .
+    #   FILTER(LANG(LCASE(?altLabelSbj))="cs" && STRENDS(LCASE(?altLabelSbj),"práva"))
+    #   ?altSubjectObject skos:inScheme <https://slovník.gov.cz/veřejný-sektor/glosář> .
+    #   BIND (IF(STRSTARTS(lcase(str(?altLabelSbj)),"objekt"),"Typ objektu práva","Typ subjektu práva") AS ?typObjSbj)
+    # }}
 }}
 GROUP BY ?pojem ?label ?altLabel ?definition ?poznamka ?pojemZdroj ?definicniObor
 ORDER BY ?pojem
