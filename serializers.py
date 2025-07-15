@@ -1,6 +1,15 @@
 import json
 
+from enums.enum_term_types import EnumTermTypes
+
 def serializuj_slovnik_do_jsonld(graf, data):
+    enum_term_types_to_strins = {
+        EnumTermTypes.VLASTNOST: "Vlastnost",
+        EnumTermTypes.VZTAH: "Vztah",   
+        EnumTermTypes.OBJEKT: "Třída"
+    }
+    
+    
     json_ld_data = {
         "@context": "https://ofn.gov.cz/slovníky/draft/kontexty/slovníky.jsonld",
         "iri": graf,
@@ -50,16 +59,32 @@ def serializuj_slovnik_do_jsonld(graf, data):
             pojem_json["alternativní-název"] = pojem["altLabel"]
         if pojem.get("definition"):
             pojem_json["definice"] = pojem["definition"]
-        if pojem.get("poznamka"):
-            pojem_json["poznámka"] = pojem["poznamka"]
-        if pojem.get("nadrazenyPojem"):
-            pojem_json["nadřazený-pojem"] = pojem["nadrazenyPojem"]
-        if pojem.get("exactMatch"):
-            pojem_json["ekvivalentní-pojem"] = pojem["exactMatch"]
         if pojem.get("zdroj"):
             pojem_json["související-ustanovení-právního-předpisu"] = pojem["zdroj"]
-        if pojem.get("definicniObor"):
+        if pojem.get("nadrazenyPojem") and enum_term_types_to_strins[EnumTermTypes.OBJEKT] in pojem_json["typ"]:
+            pojem_json["nadřazená-třída"] = pojem["nadrazenyPojem"]
+        
+        if pojem.get("definicniObor") and enum_term_types_to_strins[EnumTermTypes.VZTAH] in pojem_json["typ"]:
             pojem_json["definiční-obor"] = pojem["definicniObor"]
+            if pojem.get("oborHodnot"):
+                pojem_json["obor-hodnot"] = pojem["oborHodnot"]
+            if pojem.get("nadrazenyPojem"):
+                pojem_json["nadřazený-vztah"] = pojem["nadrazenyPojem"]
+        
+        if pojem.get("definicniObor") and enum_term_types_to_strins[EnumTermTypes.VLASTNOST] in pojem_json["typ"]:
+            pojem_json["definiční-obor"] = pojem["definicniObor"]
+            # Obor hodnot se přidává jako konstantní hodnota ke všem vlastnostem
+        
+        if enum_term_types_to_strins[EnumTermTypes.VLASTNOST] in pojem_json["typ"]:
+            pojem_json["obor-hodnot"] = "https://www.w3.org/2000/01/rdf-schema#Literal"
+        
+        if pojem.get("poznamka"):
+            pojem_json["poznámka"] = pojem["poznamka"]
+        
+        if pojem.get("exactMatch"):
+            pojem_json["ekvivalentní-pojem"] = pojem["exactMatch"]
+        
+        
 
         json_ld_data["pojmy"].append(pojem_json)
 
