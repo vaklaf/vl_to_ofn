@@ -21,6 +21,27 @@ WHERE {
 ORDER BY ?vocabulary
 """
 
+get_only_one_glossary_template = """
+PREFIX a-popis-dat-pojem: <http://onto.fel.cvut.cz/ontologies/slovník/agendový/popis-dat/pojem/>
+PREFIX dcterms: <http://purl.org/dc/terms/>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+
+SELECT DISTINCT 
+?vocabulary
+?gLabel
+?gDefinition
+(STR(?gCreated) as ?grafCreated)
+(STR(?gModified) as ?grafModified)
+WHERE {{
+    BIND ({vocabulary} as ?vocabulary).
+    ?vocabulary a owl:Ontology, a-popis-dat-pojem:slovník.
+    OPTIONAL {{?vocabulary dcterms:title ?gLabel}}.
+    OPTIONAL {{?vocabulary dcterms:description ?gDefinition}}. 
+    OPTIONAL {{?vocabulary dcterms:created ?gCreated}}.
+    OPTIONAL {{?vocabulary dcterms:modified ?gModified}}.
+}}
+"""
+
 query_items_template = """
 PREFIX dc: <http://purl.org/dc/terms/>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>

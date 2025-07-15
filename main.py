@@ -27,12 +27,12 @@ def process(
 
 ):
     """Process the SPARQL queries and generate output."""
-    print("[bold blue]Spouštím zpracování SPARQL dotazů a generování výstupu...[/bold blue]")
+    typer.secho("[Spouštím zpracování SPARQL dotazů a generování výstupu...]", fg=typer.colors.BLUE, bold=True)
     # Prepare environment
     settings = prepare_environment()
     
     if all_graphs:
-        print("[yellow]Zpracovávám všechny grafy v databázi. Může to chvíli trvat...[/yellow]")
+        typer.secho("Zpracovávám všechny grafy v databázi. Může to chvíli trvat...", fg=typer.colors.YELLOW, bold=True)
         # Run assembly line reader with provided settings
         run_assebmly_line_reader(
             sparql_endpoint=settings["sparql_endpoint"],
@@ -54,14 +54,21 @@ def process(
                                  output_dir=settings["output_dir"],
                                  glossaries_file=settings["glossaries_file"],
                                  graphs_to_process = selected_graphs)    
-    print("[bold blue]Provádím validaci slovníků...[/bold blue]")
+    typer.secho("Provádím validaci slovníků...", fg=typer.colors.GREEN, bold=True)
     # Validate glossaries after reading data
     validate_glossaries(glossaries_file=settings["glossaries_file"],
                         report_file=settings["validation_report_file"],
                         output_dir=settings["output_dir"])
-    print("[green]Validace slovníků dokončena.[/green]")
-    print("[green]Zpracování dokončeno.[/green]")
-            
+    typer.secho("Validace slovníků dokončena.", fg=typer.colors.GREEN, bold=True)
+    typer.secho("Zpracování dokončeno.", fg=typer.colors.GREEN, bold=True)
+    
+@app.command()
+def show():
+    """Show the Streamlit application for browsing glossaries."""
+    typer.secho("Spouštím Streamlit aplikaci pro prohlížení slovníků...", fg=typer.colors.BLUE, bold=True)
+    # Import here to avoid circular import issues
+    subprocess.run(["streamlit", "run", "streamlit_app.py"], check=True)
+
 def main():
     app()
     

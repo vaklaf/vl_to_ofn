@@ -13,7 +13,7 @@ import requests
 
 from SPARQLWrapper import SPARQLWrapper, JSON
 
-from queries import all_glossaries, query_items_full_template,query_term_restrictions_template
+from queries import all_glossaries, query_items_full_template,get_only_one_glossary_template,query_term_restrictions_template
 from serializers import serializuj_slovnik_do_jsonld;
 from utilities import generate_target_filename
 from enums.enum_restrictions import EnumRestrictions
@@ -108,6 +108,19 @@ def read_data_from_assembly_line(sparql_endpoint, output_dir, graphs_to_process=
                 }
                 # Dotaz na metadata slovníku (název, popis, created)
                 # Pokud potřebuješ, můžeš zde přidat dotaz na metadata
+                
+                print(f'Query:{get_only_one_glossary_template.format(vocabulary=f"<{vocabulary}>")}')
+                
+                sparql.setQuery(get_only_one_glossary_template.format(vocabulary=f"<{vocabulary}>"))
+                results = sparql.queryAndConvert()
+                for result in results["results"]["bindings"]:
+                    if "gLabel" in result and "xml:lang" in result["gLabel"]:
+                        glossary["title"][result["gLabel"]["xml:lang"]] = result["gLabel"]["value"]
+                    if "gDescription" in result and "xml:lang" in result["gDescription"]:
+                        glossary.setdefault("description", {})[result["gDescription"]["xml:lang"]] = result["gDescription"]["value"]
+                    if "grafCreated" in result and "value" in result["grafCreated"]:
+                        glossary["created"] = result["grafCreated"]["value"]
+                
                 requiered_types = " ".join(EnumTermTypes.to_list())
                 query_items = query_items_full_template.format(
                     glosar_graph=glosar_graph, 

@@ -18,5 +18,6 @@ class EnumTermTypes(Enum):
         
         for member in cls:
             if member.value == "<"+value+">": 
-                return (member,member.name.capitalize())
+                name = "Třída" if member == cls.OBJEKT else member.name.capitalize()
+                return (member,name)
         return None
