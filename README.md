@@ -19,6 +19,12 @@ Kód lze spustit třemi způsoby podle toho, zda chceme zpracovat
 
 Pro případ, že cheme zpracovat kompletní obsah databáze.
 
+<div style="background-color: #f8d7da; color: #721c24; padding: 10px; border: 1px solid #f5c6cb; border-radius: 5px; border-left: 3px solid red; margin: 10px 0;;">
+  🚨 **ISSUE:** Pomalé. Zpracování celé databáze může trvat i několik hodin.
+</div>
+
+
+
 ```powershell
 >python .\main.py process --graphs https://slovník.gov.cz/legislativní/sbírka/361/2000,https://slovník.gov.cz/legislativní/sbírka/56/2001/
 ```
