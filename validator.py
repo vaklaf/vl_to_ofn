@@ -3,7 +3,7 @@ from referencing import Registry, Resource
 from jsonschema import ValidationError, Draft202012Validator
 
 GLOSSARIES_FILE = "./output/glossaries_files.json"
-REPORT_FILE = "./output/validation_report.txt"
+REPORT_FILE = "./output/validation_report.json"
 
 # Načti všechna schémata
 with open("./schemas/json_schema.json", encoding="utf-8") as f:
@@ -33,7 +33,7 @@ def validate_glossaries(glossaries_file, report_file,output_dir):
     with open(glossaries_file, encoding="utf-8") as f:
         glossaries = json.load(f)
 
-    report_lines = []
+    results = {}
     for idx, iri in enumerate(glossaries):
         glossary_file = f'{output_dir}/{glossaries[iri]}'
         try:
@@ -43,18 +43,36 @@ def validate_glossaries(glossaries_file, report_file,output_dir):
             # Vytvoř validator s referencing registry
             validator = Draft202012Validator(schema=JSON_SCHEMA, registry=registry)
             validator.validate(glossary_data)
-            report_lines.append(f"Glossary {idx+1} ({glossary_file}): OK")
+            results[iri] = {
+                "status": "OK",
+                "file": glossary_file
+            }
+            #report_lines.append(f"Glossary {idx+1} ({glossary_file}): OK")
         except ValidationError as e:
-            report_lines.append(
-                f"Glossary {idx+1} ({glossary_file}): ERROR\n{e.message}\nPath: {'/'.join(map(str, e.path))}\n"
-            )
+            # report_lines.append(
+            #     f"Glossary {idx+1} ({glossary_file}): ERROR\n{e.message}\nPath: {'/'.join(map(str, e.path))}\n"
+            # )
+            results[iri] = {
+                "status": "ERROR",
+                "file": glossary_file,
+                "error": str(e),
+                "path": '/'.join(map(str, e.path))
+            }
         except Exception as e:
-            report_lines.append(
-                f"Glossary {idx+1} ({glossary_file}): ERROR\n{str(e)}\n"
-            )
+            # report_lines.append(
+            #     f"Glossary {idx+1} ({glossary_file}): ERROR\n{str(e)}\n"
+            # )
+            results[iri] = {
+                "status": "ERROR",
+                "file": glossary_file,
+                "error": str(e),
+                "path": ""
+            }
 
+    # with open(report_file, "w", encoding="utf-8") as f:
+    #     f.write("\n".join(report_lines))
     with open(report_file, "w", encoding="utf-8") as f:
-        f.write("\n".join(report_lines))
+        json.dump(results, f, ensure_ascii=False, indent=4)
 
 if __name__ == "__main__":
     validate_glossaries()

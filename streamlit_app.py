@@ -5,7 +5,7 @@ import os
 DOCS_DIR = "docs"
 OUTPUT_DIR = "output"
 GLOSSARIES_FILE = os.path.join(DOCS_DIR, "glossaries_files.json")
-VALIDATION_REPORT_FILE = os.path.join(DOCS_DIR, "validation_report.txt")
+VALIDATION_REPORT_FILE = os.path.join(DOCS_DIR, "validation_report.json")
 
 st.set_page_config(layout="wide")
 st.markdown("# 🗂️ Prohlížeč slovníků")
@@ -17,11 +17,15 @@ with open(GLOSSARIES_FILE, encoding="utf-8") as f:
 # Načti výsledky validace (předpokládáme textový soubor, každý slovník na novém řádku)
 validation_results = {}
 if os.path.exists(VALIDATION_REPORT_FILE):
+    # with open(VALIDATION_REPORT_FILE, encoding="utf-8") as f:
+    #     for line in f:
+    #         if ":" in line:
+    #             name, result = line.split(":", 1)
+    #             validation_results[name.strip()] = result.strip()
     with open(VALIDATION_REPORT_FILE, encoding="utf-8") as f:
-        for line in f:
-            if ":" in line:
-                name, result = line.split(":", 1)
-                validation_results[name.strip()] = result.strip()
+        validation_results = json.load(f)  # slovník: výsledek_validace
+else:   
+    st.warning("Výsledky validace nejsou k dispozici. Ujistěte se, že byly slovníky zvalidovány.")
 
 # Rozdělení stránky na navigaci a hlavní obsah
 nav, main = st.columns([1, 3])

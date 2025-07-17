@@ -51,21 +51,39 @@ Do složky `docs` se ukládají sobury `glossaries_files.json` obsahující mapo
 
 ```json
 {
-    "https://slovník.gov.cz/legislativní/sbírka/361/2000/glosář": "9e278282-fb45-4bd4-acd8-af336964425b.json-ld",
-    "https://slovník.gov.cz/legislativní/sbírka/56/2001/glosář": "2fbba82a-f300-4e5d-9c48-f3372ef2455b.json-ld",
-    "https://slovník.gov.cz/datový/turistické-cíle/glosář": "9e0b457a-f3c0-427c-8bb4-4679c74617ac.json-ld"
+    "https://slovník.gov.cz/legislativní/sbírka/361/2000/glosář": "2138c3c1-88c2-4e64-a342-b21e5fd48d63.json-ld",
+    "https://slovník.gov.cz/legislativní/sbírka/56/2001/glosář": "ce8967d6-07fa-40f7-bed6-4d37c2d9f235.json-ld",
+    "https://slovník.gov.cz/datový/turistické-cíle/glosář": "79d9d300-c03b-4218-af48-a643bdf28b6f.json-ld"
 }
 ```
-Do stejné složky se dále ukládá soubor `validation-report.txt` obsahující výsledky procesu validace. Například:
+Do stejné složky se dále ukládá soubor `validation-report.json` obsahující výsledky procesu validace. Například:
 
-```txt
-Glossary 1 (./output/9e278282-fb45-4bd4-acd8-af336964425b.json-ld): ERROR
-'https://esbirka.opendata.cz/zdroj/předpis/361/2000/sekce/2/g' does not match '^https\\://opendata\\.eselpoint\\.cz/esel-esb/eli/cz/sb/.*$'
-Path: pojmy/0/související-ustanovení-právního-předpisu/0
-
-Glossary 2 (./output/2fbba82a-f300-4e5d-9c48-f3372ef2455b.json-ld): ERROR
-'https://esbirka.opendata.cz/zdroj/předpis/56/2001/sekce/3/2/c' does not match '^https\\://opendata\\.eselpoint\\.cz/esel-esb/eli/cz/sb/.*$'
-Path: pojmy/0/související-ustanovení-právního-předpisu/0
-
-Glossary 3 (./output/9e0b457a-f3c0-427c-8bb4-4679c74617ac.json-ld): OK
+```json
+{
+    "https://slovník.gov.cz/legislativní/sbírka/361/2000/glosář": {
+        "status": "ERROR",
+        "file": "./output/2138c3c1-88c2-4e64-a342-b21e5fd48d63.json-ld",
+        "error": "'https://esbirka.opendata.cz/zdroj/předpis/361/2000/sekce/2/g' does not match '^https\\\\://opendata\\\\.eselpoint\\\\.cz/esel-esb/eli/cz/sb/.*$'\n\nFailed validating 'pattern' in schema['allOf'][1]['properties']['pojmy']['items']['properties']['související-ustanovení-právního-předpisu']['items']:\n    {'type': 'string',\n     'format': 'iri',\n     'pattern': '^https\\\\://opendata\\\\.eselpoint\\\\.cz/esel-esb/eli/cz/sb/.*$',\n     'examples': ['https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/1999/106/2024-01-01/dokument/norma/cast_1/par_3a/odst_3']}\n\nOn instance['pojmy'][0]['související-ustanovení-právního-předpisu'][0]:\n    'https://esbirka.opendata.cz/zdroj/předpis/361/2000/sekce/2/g'",
+        "path": "pojmy/0/související-ustanovení-právního-předpisu/0"
+    },
+    "https://slovník.gov.cz/legislativní/sbírka/56/2001/glosář": {
+        "status": "ERROR",
+        "file": "./output/ce8967d6-07fa-40f7-bed6-4d37c2d9f235.json-ld",
+        "error": "'https://esbirka.opendata.cz/zdroj/předpis/56/2001/sekce/3/2/c' does not match '^https\\\\://opendata\\\\.eselpoint\\\\.cz/esel-esb/eli/cz/sb/.*$'\n\nFailed validating 'pattern' in schema['allOf'][1]['properties']['pojmy']['items']['properties']['související-ustanovení-právního-předpisu']['items']:\n    {'type': 'string',\n     'format': 'iri',\n     'pattern': '^https\\\\://opendata\\\\.eselpoint\\\\.cz/esel-esb/eli/cz/sb/.*$',\n     'examples': ['https://opendata.eselpoint.cz/esel-esb/eli/cz/sb/1999/106/2024-01-01/dokument/norma/cast_1/par_3a/odst_3']}\n\nOn instance['pojmy'][0]['související-ustanovení-právního-předpisu'][0]:\n    'https://esbirka.opendata.cz/zdroj/předpis/56/2001/sekce/3/2/c'",
+        "path": "pojmy/0/související-ustanovení-právního-předpisu/0"
+    },
+    "https://slovník.gov.cz/datový/turistické-cíle/glosář": {
+        "status": "OK",
+        "file": "./output/79d9d300-c03b-4218-af48-a643bdf28b6f.json-ld"
+    }
+}
 ```
+
+## Zobrazení výsledků
+
+Pro pohldlnější práci s výsledky zpracování byl přidán modul `streamlit-app` založený na [STREAMLIT](https://streamlit.io/). Tento modul lze spustit následujícím příkazem.
+
+```powershell
+>python .\main.py show
+```
+
